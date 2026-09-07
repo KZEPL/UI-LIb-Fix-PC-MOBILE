@@ -147,6 +147,7 @@ MainWindow.Name = "MainWindow"
 MainWindow.Size = UDim2.new(0, UI_WIDTH, 0, UI_HEIGHT)
 MainWindow.Position = UDim2.new(0.5, -UI_WIDTH / 2, 0.5, -UI_HEIGHT / 2)
 MainWindow.BackgroundColor3 = THEME.WindowBg
+Main.Window.BackgroundTransparency = 0.3
 MainWindow.BorderSizePixel = 0
 MainWindow.Active = true
 MainWindow.ZIndex = 1
@@ -219,11 +220,11 @@ openButton.Size = UDim2.new(0, 40, 0, 40)
 openButton.Position = UDim2.new(0.02, 0, 0.02, 0)
 openButton.BackgroundColor3 = THEME.ChildBg
 openButton.BorderSizePixel = 0
-openButton.Image = "rbxassetid://77294532838067"
+openButton.Image = "rbxassetid://79178202891188"
 openButton.BackgroundTransparency = 0.2
 openButton.Visible = false
 openButton.Parent = SettingsGui
-Instance.new("UICorner", openButton).CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", openButton).CornerRadius = UDim.new(0, 8)
 markNoDrag(openButton)
 
 local minimizeBtn = Instance.new("TextButton")
