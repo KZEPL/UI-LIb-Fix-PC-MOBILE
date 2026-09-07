@@ -139,7 +139,7 @@ SettingsGui.Parent = playerGui
 -- Dynamic sizing based on platform
 local UI_WIDTH = isMobile and 492 or 650
 local UI_HEIGHT = isMobile and 451 or 480
-local NAV_WIDTH = isMobile and 50 or 50
+local NAV_WIDTH = isMobile and 55 or 60
 local NAV_EXPANDED = isMobile and 120 or 150
 
 local MainWindow = Instance.new("Frame")
@@ -219,7 +219,7 @@ openButton.Size = UDim2.new(0, 40, 0, 40)
 openButton.Position = UDim2.new(0.02, 0, 0.02, 0)
 openButton.BackgroundColor3 = THEME.ChildBg
 openButton.BorderSizePixel = 0
-openButton.Image = ICONS.misc
+openButton.Image = "rbxassetid://80758916183665"
 openButton.BackgroundTransparency = 0.2
 openButton.Visible = false
 openButton.Parent = SettingsGui
