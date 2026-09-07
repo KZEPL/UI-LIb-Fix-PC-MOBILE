@@ -1,4 +1,4 @@
--- Main UI lib (PC Only - Fixed Window & Tabs)
+-- Main UI lib
 
 local Release = "Release 1"
 
@@ -147,7 +147,6 @@ MainWindow.Name = "MainWindow"
 MainWindow.Size = UDim2.new(0, UI_WIDTH, 0, UI_HEIGHT)
 MainWindow.Position = UDim2.new(0.5, -UI_WIDTH / 2, 0.5, -UI_HEIGHT / 2)
 MainWindow.BackgroundColor3 = THEME.WindowBg
-MainWindow.BackgroundTransparency = 0.3
 MainWindow.BorderSizePixel = 0
 MainWindow.Active = true
 MainWindow.ZIndex = 1
