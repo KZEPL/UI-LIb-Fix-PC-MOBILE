@@ -1,4 +1,4 @@
--- Main UI lib (PC & Mobile Optimized)
+-- Main UI lib
 
 local Release = "Release 1"
 
@@ -128,7 +128,7 @@ local function rgbToHsv(c)
 end
 
 -- ============================================================
---  CREATE UI (PC & MOBILE OPTIMIZED)
+--  CREATE UI (MOBILE OPTIMIZED - FIXED)
 -- ============================================================
 local SettingsGui = Instance.new("ScreenGui")
 SettingsGui.Name = "RobloxianSettings"
@@ -136,7 +136,7 @@ SettingsGui.ResetOnSpawn = false
 SettingsGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 SettingsGui.Parent = playerGui
 
--- Dynamic sizing based on platform
+-- MOBILE SIZE: fixed for better display
 local UI_WIDTH = isMobile and 492 or 650
 local UI_HEIGHT = isMobile and 451 or 480
 local NAV_WIDTH = isMobile and 50 or 50
@@ -156,7 +156,7 @@ local mwStroke = Instance.new("UIStroke", MainWindow)
 mwStroke.Color = THEME.Border; mwStroke.Thickness = 1
 
 -- ============================================================
---  DRAGGING (WHOLE WINDOW - Mobile & PC friendly)
+--  DRAGGING (WHOLE WINDOW - Mobile friendly)
 -- ============================================================
 local dragging = false
 local dragStart = nil
@@ -219,7 +219,7 @@ openButton.Size = UDim2.new(0, 40, 0, 40)
 openButton.Position = UDim2.new(0.02, 0, 0.02, 0)
 openButton.BackgroundColor3 = THEME.ChildBg
 openButton.BorderSizePixel = 0
-openButton.Image = ICONS.misc
+openButton.Image = "rbxassetid://76444615367444"
 openButton.BackgroundTransparency = 0.2
 openButton.Visible = false
 openButton.Parent = SettingsGui
@@ -360,7 +360,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- ============================================================
---  CONTENT AREA (Dynamic for PC/Mobile)
+--  CONTENT AREA (FIXED - more padding)
 -- ============================================================
 local ContentArea = Instance.new("CanvasGroup")
 ContentArea.Name = "ContentArea"
@@ -426,7 +426,7 @@ NavbarBorder.Parent = Navbar
 local CollapseButton = Instance.new("ImageButton")
 CollapseButton.Size = UDim2.new(0, 17, 0, 17)
 CollapseButton.AnchorPoint = Vector2.new(0.5, 0.5)
-CollapseButton.Position = UDim2.new(1, 0, 0, 87)
+CollapseButton.Position = UDim2.new(1, 0, 0, 87) -- Below tabs
 CollapseButton.BackgroundColor3 = THEME.ChildBg
 CollapseButton.Image = ICONS.collapse
 CollapseButton.ImageColor3 = THEME.TextDisabled
@@ -469,6 +469,7 @@ local function switchTab(id)
 			tabData.Container.Visible = true
 			tabData.Container.GroupTransparency = 1
 			TweenService:Create(tabData.Container, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
+			-- Calculate Y position: 87 + (tabId - 1) * 28
 			targetIndicatorY = 87 + (id - 1) * 28
 			TabIndicator.Visible = true
 		else
@@ -520,7 +521,7 @@ local function AddTab(id, name, icon)
 	btn.BackgroundTransparency = 1
 	btn.Text = ""
 	btn.ZIndex = 12
-	btn.Parent = NavScroll
+	btn.Parent = NavScroll  -- Changed from Navbar to NavScroll
 
 	local ic = Instance.new("ImageLabel")
 	ic.Size = UDim2.new(0, 16, 0, 16)
@@ -1037,6 +1038,7 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 	markNoDrag(preview)
 
 	local h, s, v = rgbToHsv(defaultColor)
+	local a = 1
 	local open = false
 	local picker = nil
 
@@ -1505,8 +1507,8 @@ function WindowMethods:CreateTab(name, icon)
 
 	local function makeColumn(xScale, xOff)
 		local sf = Instance.new("ScrollingFrame")
-		sf.Size = UDim2.new(isMobile and 1 or 0.5, isMobile and 0 or -8, 1, 0)
-		sf.Position = UDim2.new(isMobile and 0 or xScale, isMobile and 0 or xOff, 0, 0)
+		sf.Size = UDim2.new(0.5, -8, 1, 0)
+		sf.Position = UDim2.new(xScale, xOff, 0, 0)
 		sf.BackgroundTransparency = 1
 		sf.BorderSizePixel = 0
 		sf.ScrollBarThickness = 4
