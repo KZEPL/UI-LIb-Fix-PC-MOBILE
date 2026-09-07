@@ -1,4 +1,4 @@
--- Main UI lib
+-- Main UI lib (PC Only - Fixed Window & Tabs)
 
 local Release = "Release 1"
 
@@ -128,7 +128,7 @@ local function rgbToHsv(c)
 end
 
 -- ============================================================
---  CREATE UI (MOBILE OPTIMIZED - FIXED)
+--  CREATE UI (PC & MOBILE - Same layout, different size)
 -- ============================================================
 local SettingsGui = Instance.new("ScreenGui")
 SettingsGui.Name = "RobloxianSettings"
@@ -136,11 +136,11 @@ SettingsGui.ResetOnSpawn = false
 SettingsGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 SettingsGui.Parent = playerGui
 
--- MOBILE SIZE: fixed for better display
-local UI_WIDTH = isMobile and 492 or 650
-local UI_HEIGHT = isMobile and 451 or 480
-local NAV_WIDTH = isMobile and 50 or 50
-local NAV_EXPANDED = isMobile and 120 or 150
+-- Same layout, just smaller on mobile
+local UI_WIDTH = isMobile and 550 or 650
+local UI_HEIGHT = isMobile and 400 or 480
+local NAV_WIDTH = 50  -- Same on both
+local NAV_EXPANDED = 150  -- Same on both
 
 local MainWindow = Instance.new("Frame")
 MainWindow.Name = "MainWindow"
@@ -156,7 +156,7 @@ local mwStroke = Instance.new("UIStroke", MainWindow)
 mwStroke.Color = THEME.Border; mwStroke.Thickness = 1
 
 -- ============================================================
---  DRAGGING (WHOLE WINDOW - Mobile friendly)
+--  DRAGGING (WHOLE WINDOW)
 -- ============================================================
 local dragging = false
 local dragStart = nil
@@ -207,7 +207,7 @@ closeBtn.Position = UDim2.new(1, -32, 0, 6)
 closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
 closeBtn.Text = "✕"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.TextSize = isMobile and 12 or 14
+closeBtn.TextSize = 14
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.ZIndex = 100
 closeBtn.Parent = MainWindow
@@ -219,7 +219,7 @@ openButton.Size = UDim2.new(0, 40, 0, 40)
 openButton.Position = UDim2.new(0.02, 0, 0.02, 0)
 openButton.BackgroundColor3 = THEME.ChildBg
 openButton.BorderSizePixel = 0
-openButton.Image = "rbxassetid://76444615367444"
+openButton.Image = ICONS.misc
 openButton.BackgroundTransparency = 0.2
 openButton.Visible = false
 openButton.Parent = SettingsGui
@@ -232,7 +232,7 @@ minimizeBtn.Position = UDim2.new(1, -60, 0, 6)
 minimizeBtn.BackgroundColor3 = THEME.MID
 minimizeBtn.Text = "—"
 minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-minimizeBtn.TextSize = isMobile and 12 or 14
+minimizeBtn.TextSize = 14
 minimizeBtn.Font = Enum.Font.GothamBold
 minimizeBtn.ZIndex = 100
 minimizeBtn.Parent = MainWindow
@@ -308,7 +308,7 @@ minimizeBtn.MouseButton1Click:Connect(function()
 	openBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	openBtn.Text = "+"
 	openBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
-	openBtn.TextSize = isMobile and 12 or 14
+	openBtn.TextSize = 14
 	openBtn.Font = Enum.Font.GothamBold
 	openBtn.ZIndex = 100
 	openBtn.Parent = floatingBar
@@ -323,7 +323,7 @@ minimizeBtn.MouseButton1Click:Connect(function()
 	label.ZIndex = 100
 	label.Text = "KYZENO X HUB"
 	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.TextSize = isMobile and 12 or 14
+	label.TextSize = 14
 	label.Font = Enum.Font.GothamBold
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = floatingBar
@@ -360,7 +360,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- ============================================================
---  CONTENT AREA (FIXED - more padding)
+--  CONTENT AREA (FIXED)
 -- ============================================================
 local ContentArea = Instance.new("CanvasGroup")
 ContentArea.Name = "ContentArea"
@@ -426,7 +426,7 @@ NavbarBorder.Parent = Navbar
 local CollapseButton = Instance.new("ImageButton")
 CollapseButton.Size = UDim2.new(0, 17, 0, 17)
 CollapseButton.AnchorPoint = Vector2.new(0.5, 0.5)
-CollapseButton.Position = UDim2.new(1, 0, 0, 87) -- Below tabs
+CollapseButton.Position = UDim2.new(1, 0, 0, 87)
 CollapseButton.BackgroundColor3 = THEME.ChildBg
 CollapseButton.Image = ICONS.collapse
 CollapseButton.ImageColor3 = THEME.TextDisabled
@@ -469,7 +469,6 @@ local function switchTab(id)
 			tabData.Container.Visible = true
 			tabData.Container.GroupTransparency = 1
 			TweenService:Create(tabData.Container, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
-			-- Calculate Y position: 87 + (tabId - 1) * 28
 			targetIndicatorY = 87 + (id - 1) * 28
 			TabIndicator.Visible = true
 		else
@@ -521,7 +520,7 @@ local function AddTab(id, name, icon)
 	btn.BackgroundTransparency = 1
 	btn.Text = ""
 	btn.ZIndex = 12
-	btn.Parent = NavScroll  -- Changed from Navbar to NavScroll
+	btn.Parent = NavScroll
 
 	local ic = Instance.new("ImageLabel")
 	ic.Size = UDim2.new(0, 16, 0, 16)
@@ -538,7 +537,7 @@ local function AddTab(id, name, icon)
 	lbl.BackgroundTransparency = 1
 	lbl.Text = name
 	lbl.TextColor3 = THEME.TextDisabled
-	lbl.TextSize = isMobile and 10 or 13
+	lbl.TextSize = 13
 	ApplyFont(lbl, "header")
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.ClipsDescendants = true
@@ -554,11 +553,11 @@ local function AddTab(id, name, icon)
 	container.Parent = ContentArea
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, 0, 0, isMobile and 20 or 30)
+	title.Size = UDim2.new(1, 0, 0, 30)
 	title.BackgroundTransparency = 1
 	title.Text = name
 	title.TextColor3 = THEME.Text
-	title.TextSize = isMobile and 16 or 22
+	title.TextSize = 22
 	ApplyFont(title, "title")
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = container
@@ -579,8 +578,8 @@ end
 -- ============================================================
 local function CreateSubtabSystem(tabContainer, subtabNames)
 	local header = Instance.new("Frame")
-	header.Size = UDim2.new(1, 0, 0, isMobile and 30 or 40)
-	header.Position = UDim2.new(0, 0, 0, isMobile and 25 or 35)
+	header.Size = UDim2.new(1, 0, 0, 40)
+	header.Position = UDim2.new(0, 0, 0, 35)
 	header.BackgroundColor3 = THEME.Border
 	header.BorderSizePixel = 0
 	header.Parent = tabContainer
@@ -597,12 +596,12 @@ local function CreateSubtabSystem(tabContainer, subtabNames)
 	local ll = Instance.new("UIListLayout", hbg)
 	ll.FillDirection = Enum.FillDirection.Horizontal
 	ll.SortOrder = Enum.SortOrder.LayoutOrder
-	ll.Padding = UDim.new(0, isMobile and 10 or 20)
-	local hp = Instance.new("UIPadding", hbg); hp.PaddingLeft = UDim.new(0, isMobile and 8 or 16)
+	ll.Padding = UDim.new(0, 20)
+	local hp = Instance.new("UIPadding", hbg); hp.PaddingLeft = UDim.new(0, 16)
 
 	local contentArea = Instance.new("Frame")
-	contentArea.Size = UDim2.new(1, 0, 1, -(isMobile and 65 or 85))
-	contentArea.Position = UDim2.new(0, 0, 0, isMobile and 65 or 85)
+	contentArea.Size = UDim2.new(1, 0, 1, -85)
+	contentArea.Position = UDim2.new(0, 0, 0, 85)
 	contentArea.BackgroundTransparency = 1
 	contentArea.Parent = tabContainer
 
@@ -615,7 +614,7 @@ local function CreateSubtabSystem(tabContainer, subtabNames)
 		sbtn.BackgroundTransparency = 1
 		sbtn.Text = name
 		sbtn.TextColor3 = THEME.TextDisabled
-		sbtn.TextSize = isMobile and 11 or 13
+		sbtn.TextSize = 13
 		ApplyFont(sbtn, "header")
 		sbtn.AutomaticSize = Enum.AutomaticSize.X
 		sbtn.Parent = hbg
@@ -638,9 +637,9 @@ local function CreateSubtabSystem(tabContainer, subtabNames)
 		cf.Parent = contentArea
 
 		local lc = Instance.new("Frame"); lc.Name = "LeftCol"; lc.Size = UDim2.new(0.5, -8, 1, 0); lc.BackgroundTransparency = 1; lc.Parent = cf
-		local ll2 = Instance.new("UIListLayout", lc); ll2.SortOrder = Enum.SortOrder.LayoutOrder; ll2.Padding = UDim.new(0, isMobile and 6 or 12)
+		local ll2 = Instance.new("UIListLayout", lc); ll2.SortOrder = Enum.SortOrder.LayoutOrder; ll2.Padding = UDim.new(0, 12)
 		local rc = Instance.new("Frame"); rc.Name = "RightCol"; rc.Size = UDim2.new(0.5, -8, 1, 0); rc.Position = UDim2.new(0.5, 8, 0, 0); rc.BackgroundTransparency = 1; rc.Parent = cf
-		local rl2 = Instance.new("UIListLayout", rc); rl2.SortOrder = Enum.SortOrder.LayoutOrder; rl2.Padding = UDim.new(0, isMobile and 6 or 12)
+		local rl2 = Instance.new("UIListLayout", rc); rl2.SortOrder = Enum.SortOrder.LayoutOrder; rl2.Padding = UDim.new(0, 12)
 
 		local function select()
 			if activeSubtab then
@@ -673,11 +672,11 @@ local function CreateSubtabSystem(tabContainer, subtabNames)
 end
 
 -- ============================================================
---  CREATE CHILD BOX (Mobile optimized)
+--  CREATE CHILD BOX
 -- ============================================================
 local function CreateChildBox(column, name, height)
 	local box = Instance.new("Frame")
-	box.Size = UDim2.new(1, 0, 0, height or (isMobile and 140 or 180))
+	box.Size = UDim2.new(1, 0, 0, height or 180)
 	box.BackgroundColor3 = THEME.Border
 	box.BorderSizePixel = 0
 	box.Parent = column
@@ -692,34 +691,34 @@ local function CreateChildBox(column, name, height)
 	Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 3)
 
 	local hdr = Instance.new("TextLabel")
-	hdr.Size = UDim2.new(1, -30, 0, isMobile and 30 or 40)
+	hdr.Size = UDim2.new(1, -30, 0, 40)
 	hdr.Position = UDim2.new(0, 15, 0, 0)
 	hdr.BackgroundTransparency = 1
 	hdr.Text = name
 	hdr.TextColor3 = THEME.Text
-	hdr.TextSize = isMobile and 11 or 13
+	hdr.TextSize = 13
 	ApplyFont(hdr, "title")
 	hdr.TextXAlignment = Enum.TextXAlignment.Left
 	hdr.Parent = bg
 
 	local inner = Instance.new("Frame")
 	inner.Name = "Inner"
-	inner.Size = UDim2.new(1, -30, 1, -(isMobile and 40 or 50))
-	inner.Position = UDim2.new(0, 15, 0, isMobile and 35 or 45)
+	inner.Size = UDim2.new(1, -30, 1, -50)
+	inner.Position = UDim2.new(0, 15, 0, 45)
 	inner.BackgroundTransparency = 1
 	inner.Parent = bg
-	local il = Instance.new("UIListLayout", inner); il.SortOrder = Enum.SortOrder.LayoutOrder; il.Padding = UDim.new(0, isMobile and 6 or 12)
+	local il = Instance.new("UIListLayout", inner); il.SortOrder = Enum.SortOrder.LayoutOrder; il.Padding = UDim.new(0, 12)
 
 	return inner
 end
 
 -- ============================================================
---  UI ELEMENTS (Mobile optimized)
+--  UI ELEMENTS
 -- ============================================================
 local function AddToggle(parent, labelText, default, callback)
 	local isSoon = labelText == "SOON"
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, isMobile and 18 or 20)
+	row.Size = UDim2.new(1, 0, 0, 20)
 	row.BackgroundTransparency = 1
 	row.Parent = parent
 
@@ -728,14 +727,14 @@ local function AddToggle(parent, labelText, default, callback)
 	lbl.BackgroundTransparency = 1
 	lbl.Text = labelText
 	lbl.TextColor3 = isSoon and THEME.TextDisabled or THEME.Text
-	lbl.TextSize = isMobile and 11 or 13
+	lbl.TextSize = 13
 	ApplyFont(lbl, "label")
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.Parent = row
 
 	local box = Instance.new("TextButton")
-	box.Size = UDim2.new(0, isMobile and 16 or 20, 0, isMobile and 16 or 20)
-	box.Position = UDim2.new(1, -(isMobile and 16 or 20), 0.5, -(isMobile and 8 or 10))
+	box.Size = UDim2.new(0, 20, 0, 20)
+	box.Position = UDim2.new(1, -20, 0.5, -10)
 	box.BackgroundColor3 = THEME.FrameBg
 	box.BorderSizePixel = 0
 	box.Text = ""
@@ -750,7 +749,7 @@ local function AddToggle(parent, labelText, default, callback)
 	chk.BackgroundTransparency = 1
 	chk.Text = ""
 	chk.TextColor3 = THEME.CheckMark
-	chk.TextSize = isMobile and 10 or 13
+	chk.TextSize = 13
 	ApplyFont(chk, "label")
 	chk.TextXAlignment = Enum.TextXAlignment.Center
 	chk.TextYAlignment = Enum.TextYAlignment.Center
@@ -758,8 +757,7 @@ local function AddToggle(parent, labelText, default, callback)
 
 	local enabled = default or false
 	local function updateState()
-		if enabled then
-			TweenService:Create(box, TweenInfo.new(0.1), {BackgroundColor3 = THEME.Scheme}):Play()
+		if enabled then			TweenService:Create(box, TweenInfo.new(0.1), {BackgroundColor3 = THEME.Scheme}):Play()
 			bs.Color = THEME.Scheme
 			chk.Text = "✓"
 		else
@@ -780,39 +778,39 @@ local function AddToggle(parent, labelText, default, callback)
 end
 
 -- ============================================================
---  SLIDER (MOBILE FIXED - Touch friendly)
+--  SLIDER
 -- ============================================================
 local function AddSlider(parent, labelText, min, max, default, callback)
 	local isSoon = labelText == "SOON"
 	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, 0, 0, isMobile and 32 or 36)
+	frame.Size = UDim2.new(1, 0, 0, 36)
 	frame.BackgroundTransparency = 1
 	frame.Parent = parent
 
 	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.new(0.55, 0, 0, isMobile and 12 or 14)
+	lbl.Size = UDim2.new(0.55, 0, 0, 14)
 	lbl.BackgroundTransparency = 1
 	lbl.Text = labelText
 	lbl.TextColor3 = isSoon and THEME.TextDisabled or THEME.Text
-	lbl.TextSize = isMobile and 11 or 13
+	lbl.TextSize = 13
 	ApplyFont(lbl, "label")
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.Parent = frame
 
 	local valLbl = Instance.new("TextLabel")
-	valLbl.Size = UDim2.new(0.25, 0, 0, isMobile and 12 or 14)
+	valLbl.Size = UDim2.new(0.25, 0, 0, 14)
 	valLbl.Position = UDim2.new(0.65, 0, 0, 0)
 	valLbl.BackgroundTransparency = 1
 	valLbl.Text = tostring(default)
 	valLbl.TextColor3 = isSoon and THEME.TextDisabled or THEME.TextDisabled
-	valLbl.TextSize = isMobile and 10 or 12
+	valLbl.TextSize = 12
 	ApplyFont(valLbl, "value")
 	valLbl.TextXAlignment = Enum.TextXAlignment.Right
 	valLbl.Parent = frame
 
 	local bar = Instance.new("TextButton")
-	bar.Size = UDim2.new(1, 0, 0, isMobile and 6 or 8)
-	bar.Position = UDim2.new(0, 0, 0, isMobile and 20 or 24)
+	bar.Size = UDim2.new(1, 0, 0, 8)
+	bar.Position = UDim2.new(0, 0, 0, 24)
 	bar.BackgroundColor3 = THEME.FrameBg
 	bar.BorderSizePixel = 0
 	bar.Text = ""
@@ -829,7 +827,7 @@ local function AddSlider(parent, labelText, min, max, default, callback)
 	Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 3)
 
 	local knob = Instance.new("Frame")
-	knob.Size = UDim2.new(0, isMobile and 12 or 14, 0, isMobile and 12 or 14)
+	knob.Size = UDim2.new(0, 14, 0, 14)
 	knob.AnchorPoint = Vector2.new(0.5, 0.5)
 	knob.Position = UDim2.new((default - min) / (max - min), 0, 0.5, 0)
 	knob.BackgroundColor3 = THEME.SliderGrab
@@ -868,12 +866,12 @@ local function AddSlider(parent, labelText, min, max, default, callback)
 end
 
 -- ============================================================
---  DROPDOWN (Mobile optimized)
+--  DROPDOWN
 -- ============================================================
 local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 	local selectedIndex = defaultIndex or 1
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, isMobile and 20 or 22)
+	row.Size = UDim2.new(1, 0, 0, 22)
 	row.BackgroundTransparency = 1
 	row.Parent = parent
 
@@ -882,7 +880,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 	lbl.BackgroundTransparency = 1
 	lbl.Text = labelText
 	lbl.TextColor3 = THEME.Text
-	lbl.TextSize = isMobile and 11 or 13
+	lbl.TextSize = 13
 	ApplyFont(lbl, "label")
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.Parent = row
@@ -894,7 +892,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 	btn.BorderSizePixel = 0
 	btn.Text = "  " .. options[selectedIndex]
 	btn.TextColor3 = THEME.TextDisabled
-	btn.TextSize = isMobile and 10 or 12
+	btn.TextSize = 12
 	ApplyFont(btn, "value")
 	btn.TextXAlignment = Enum.TextXAlignment.Left
 	btn.AutoButtonColor = false
@@ -909,7 +907,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 	arrow.BackgroundTransparency = 1
 	arrow.Text = "▼"
 	arrow.TextColor3 = THEME.TextDisabled
-	arrow.TextSize = isMobile and 8 or 9
+	arrow.TextSize = 9
 	arrow.Font = Enum.Font.Gotham
 	arrow.Parent = btn
 
@@ -929,7 +927,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 			listFrame = Instance.new("Frame")
 			local relPos = btn.AbsolutePosition - MainWindow.AbsolutePosition
 			listFrame.Position = UDim2.new(0, relPos.X, 0, relPos.Y + btn.AbsoluteSize.Y + 2)
-			listFrame.Size = UDim2.new(0, btn.AbsoluteSize.X, 0, math.min(#options * (isMobile and 20 or 24) + 4, isMobile and 100 or 130))
+			listFrame.Size = UDim2.new(0, btn.AbsoluteSize.X, 0, math.min(#options * 24 + 4, 130))
 			listFrame.BackgroundColor3 = THEME.PopupBg
 			listFrame.BorderSizePixel = 0
 			listFrame.ZIndex = 200
@@ -945,7 +943,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 			scroll.BorderSizePixel = 0
 			scroll.ScrollBarThickness = 4
 			scroll.ScrollBarImageColor3 = THEME.Border
-			scroll.CanvasSize = UDim2.new(1, 0, 0, #options * (isMobile and 20 or 24))
+			scroll.CanvasSize = UDim2.new(1, 0, 0, #options * 24)
 			scroll.ZIndex = 201
 			scroll.Parent = listFrame
 			local sl = Instance.new("UIListLayout", scroll); sl.SortOrder = Enum.SortOrder.LayoutOrder
@@ -953,7 +951,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 			for idx, opt in ipairs(options) do
 				local isSelected = idx == selectedIndex
 				local optBtn = Instance.new("TextButton")
-				optBtn.Size = UDim2.new(1, 0, 0, isMobile and 20 or 24)
+				optBtn.Size = UDim2.new(1, 0, 0, 24)
 				optBtn.BackgroundColor3 = THEME.PopupBg
 				optBtn.BorderSizePixel = 0
 				optBtn.Text = ""
@@ -967,7 +965,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 				optLbl.BackgroundTransparency = 1
 				optLbl.Text = opt
 				optLbl.TextColor3 = isSelected and THEME.Scheme or THEME.Text
-				optLbl.TextSize = isMobile and 10 or 12
+				optLbl.TextSize = 12
 				ApplyFont(optLbl, "value")
 				optLbl.TextXAlignment = Enum.TextXAlignment.Left
 				optLbl.ZIndex = 203
@@ -1007,11 +1005,11 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 end
 
 -- ============================================================
---  COLOR PICKER (Mobile optimized)
+--  COLOR PICKER
 -- ============================================================
 local function AddColorpicker(parent, labelText, defaultColor, callback)
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, isMobile and 18 or 20)
+	row.Size = UDim2.new(1, 0, 0, 20)
 	row.BackgroundTransparency = 1
 	row.Parent = parent
 
@@ -1020,14 +1018,14 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 	lbl.BackgroundTransparency = 1
 	lbl.Text = labelText
 	lbl.TextColor3 = THEME.Text
-	lbl.TextSize = isMobile and 11 or 13
+	lbl.TextSize = 13
 	ApplyFont(lbl, "label")
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.Parent = row
 
 	local preview = Instance.new("TextButton")
-	preview.Size = UDim2.new(0, isMobile and 22 or 28, 0, isMobile and 12 or 14)
-	preview.Position = UDim2.new(1, -(isMobile and 22 or 28), 0.5, -(isMobile and 6 or 7))
+	preview.Size = UDim2.new(0, 28, 0, 14)
+	preview.Position = UDim2.new(1, -28, 0.5, -7)
 	preview.BackgroundColor3 = defaultColor
 	preview.BorderSizePixel = 0
 	preview.Text = ""
@@ -1038,7 +1036,6 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 	markNoDrag(preview)
 
 	local h, s, v = rgbToHsv(defaultColor)
-	local a = 1
 	local open = false
 	local picker = nil
 
@@ -1048,8 +1045,8 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 			picker = Instance.new("Frame")
 			picker.Name = "ColorPicker"
 			local relPos = preview.AbsolutePosition - MainWindow.AbsolutePosition
-			picker.Position = UDim2.new(0, relPos.X - (isMobile and 120 or 155), 0, relPos.Y + preview.AbsoluteSize.Y + 4)
-			picker.Size = UDim2.new(0, isMobile and 130 or 160, 0, isMobile and 170 or 200)
+			picker.Position = UDim2.new(0, relPos.X - 155, 0, relPos.Y + preview.AbsoluteSize.Y + 4)
+			picker.Size = UDim2.new(0, 160, 0, 200)
 			picker.BackgroundColor3 = THEME.PopupBg
 			picker.BorderSizePixel = 0
 			picker.ZIndex = 250
@@ -1060,7 +1057,7 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 			markNoDrag(picker)
 
 			local svBg = Instance.new("ImageLabel")
-			svBg.Size = UDim2.new(0, isMobile and 114 or 144, 0, isMobile and 100 or 120)
+			svBg.Size = UDim2.new(0, 144, 0, 120)
 			svBg.Position = UDim2.new(0, 8, 0, 8)
 			svBg.BorderSizePixel = 0
 			svBg.ZIndex = 251
@@ -1076,7 +1073,7 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 			svDark.Parent = svBg
 
 			local cursor = Instance.new("Frame")
-			cursor.Size = UDim2.new(0, isMobile and 6 or 8, 0, isMobile and 6 or 8)
+			cursor.Size = UDim2.new(0, 8, 0, 8)
 			cursor.AnchorPoint = Vector2.new(0.5, 0.5)
 			cursor.Position = UDim2.new(s, 0, 1 - v, 0)
 			cursor.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -1087,8 +1084,8 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 			local cs2 = Instance.new("UIStroke", cursor); cs2.Color = Color3.new(0, 0, 0); cs2.Thickness = 1
 
 			local hueBar = Instance.new("ImageLabel")
-			hueBar.Size = UDim2.new(0, isMobile and 114 or 144, 0, isMobile and 8 or 10)
-			hueBar.Position = UDim2.new(0, 8, 0, isMobile and 114 or 134)
+			hueBar.Size = UDim2.new(0, 144, 0, 10)
+			hueBar.Position = UDim2.new(0, 8, 0, 134)
 			hueBar.Image = "rbxassetid://698052001"
 			hueBar.BorderSizePixel = 0
 			hueBar.ZIndex = 251
@@ -1096,27 +1093,27 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 			Instance.new("UICorner", hueBar).CornerRadius = UDim.new(0, 2)
 
 			local bottomRow = Instance.new("Frame")
-			bottomRow.Size = UDim2.new(0, isMobile and 114 or 144, 0, isMobile and 18 or 20)
-			bottomRow.Position = UDim2.new(0, 8, 0, isMobile and 128 or 148)
+			bottomRow.Size = UDim2.new(0, 144, 0, 20)
+			bottomRow.Position = UDim2.new(0, 8, 0, 148)
 			bottomRow.BackgroundTransparency = 1
 			bottomRow.ZIndex = 251
 			bottomRow.Parent = picker
 
 			local hexLabel = Instance.new("TextLabel")
-			hexLabel.Size = UDim2.new(0, isMobile and 80 or 104, 1, 0)
+			hexLabel.Size = UDim2.new(0, 104, 1, 0)
 			hexLabel.BackgroundColor3 = THEME.FrameBg
 			hexLabel.BorderSizePixel = 0
 			hexLabel.Text = string.format("#%02X%02X%02X", math.floor(defaultColor.R*255), math.floor(defaultColor.G*255), math.floor(defaultColor.B*255))
 			hexLabel.TextColor3 = THEME.TextDisabled
-			hexLabel.TextSize = isMobile and 10 or 11
+			hexLabel.TextSize = 11
 			ApplyFont(hexLabel, "value")
 			hexLabel.ZIndex = 252
 			hexLabel.Parent = bottomRow
 			Instance.new("UICorner", hexLabel).CornerRadius = UDim.new(0, 2)
 
 			local colorDot = Instance.new("Frame")
-			colorDot.Size = UDim2.new(0, isMobile and 16 or 20, 0, isMobile and 16 or 20)
-			colorDot.Position = UDim2.new(0, isMobile and 86 or 108, 0, 0)
+			colorDot.Size = UDim2.new(0, 20, 0, 20)
+			colorDot.Position = UDim2.new(0, 108, 0, 0)
 			colorDot.BackgroundColor3 = defaultColor
 			colorDot.BorderSizePixel = 0
 			colorDot.ZIndex = 252
@@ -1191,17 +1188,17 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 end
 
 -- ============================================================
---  BUTTON, LABEL, PARAGRAPH, INPUT (Mobile optimized)
+--  BUTTON, LABEL, PARAGRAPH, INPUT
 -- ============================================================
 local function AddButton(parent, text, callback)
 	local isSoon = text == "SOON"
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(1, 0, 0, isMobile and 20 or 22)
+	btn.Size = UDim2.new(1, 0, 0, 22)
 	btn.BackgroundColor3 = isSoon and THEME.ChildBg or THEME.FrameBg
 	btn.BorderSizePixel = 0
 	btn.Text = text
 	btn.TextColor3 = isSoon and THEME.TextDisabled or THEME.Text
-	btn.TextSize = isMobile and 11 or 13
+	btn.TextSize = 13
 	ApplyFont(btn, "label")
 	btn.AutoButtonColor = false
 	btn.Parent = parent
@@ -1222,7 +1219,7 @@ local function AddLabel(parent, text)
 	lbl.BackgroundTransparency = 1
 	lbl.Text = text
 	lbl.TextColor3 = THEME.Text
-	lbl.TextSize = isMobile and 11 or 13
+	lbl.TextSize = 13
 	ApplyFont(lbl, "label")
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.TextWrapped = true
@@ -1240,11 +1237,11 @@ local function AddParagraph(parent, title, content)
 	hl.Padding = UDim.new(0, 4)
 
 	local t = Instance.new("TextLabel")
-	t.Size = UDim2.new(1, 0, 0, isMobile and 14 or 16)
+	t.Size = UDim2.new(1, 0, 0, 16)
 	t.BackgroundTransparency = 1
 	t.Text = title
 	t.TextColor3 = THEME.Text
-	t.TextSize = isMobile and 11 or 13
+	t.TextSize = 13
 	ApplyFont(t, "title")
 	t.TextXAlignment = Enum.TextXAlignment.Left
 	t.Parent = holder
@@ -1255,7 +1252,7 @@ local function AddParagraph(parent, title, content)
 	c.BackgroundTransparency = 1
 	c.Text = content
 	c.TextColor3 = THEME.TextDisabled
-	c.TextSize = isMobile and 10 or 12
+	c.TextSize = 12
 	ApplyFont(c, "value")
 	c.TextXAlignment = Enum.TextXAlignment.Left
 	c.TextWrapped = true
@@ -1264,7 +1261,7 @@ end
 
 local function AddInput(parent, labelText, placeholder, callback)
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, isMobile and 20 or 22)
+	row.Size = UDim2.new(1, 0, 0, 22)
 	row.BackgroundTransparency = 1
 	row.Parent = parent
 
@@ -1273,7 +1270,7 @@ local function AddInput(parent, labelText, placeholder, callback)
 	lbl.BackgroundTransparency = 1
 	lbl.Text = labelText
 	lbl.TextColor3 = THEME.Text
-	lbl.TextSize = isMobile and 11 or 13
+	lbl.TextSize = 13
 	ApplyFont(lbl, "label")
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.Parent = row
@@ -1295,7 +1292,7 @@ local function AddInput(parent, labelText, placeholder, callback)
 	tb.PlaceholderText = placeholder or ""
 	tb.TextColor3 = THEME.Text
 	tb.PlaceholderColor3 = THEME.TextDisabled
-	tb.TextSize = isMobile and 10 or 12
+	tb.TextSize = 12
 	ApplyFont(tb, "value")
 	tb.TextXAlignment = Enum.TextXAlignment.Left
 	tb.ClearTextOnFocus = false
@@ -1325,7 +1322,7 @@ end
 -- ============================================================
 local function makeSection(column, name)
 	local hasHeader = name ~= nil and name ~= ""
-	local headerH = hasHeader and (isMobile and 30 or 40) or 6
+	local headerH = hasHeader and 40 or 6
 
 	local box = Instance.new("Frame")
 	box.Size = UDim2.new(1, 0, 0, headerH + 20)
@@ -1344,12 +1341,12 @@ local function makeSection(column, name)
 
 	if hasHeader then
 		local hdr = Instance.new("TextLabel")
-		hdr.Size = UDim2.new(1, -30, 0, isMobile and 30 or 40)
+		hdr.Size = UDim2.new(1, -30, 0, 40)
 		hdr.Position = UDim2.new(0, 15, 0, 0)
 		hdr.BackgroundTransparency = 1
 		hdr.Text = name
 		hdr.TextColor3 = THEME.Text
-		hdr.TextSize = isMobile and 11 or 13
+		hdr.TextSize = 13
 		ApplyFont(hdr, "title")
 		hdr.TextXAlignment = Enum.TextXAlignment.Left
 		hdr.Parent = bg
@@ -1363,7 +1360,7 @@ local function makeSection(column, name)
 	inner.Parent = bg
 	local il = Instance.new("UIListLayout", inner)
 	il.SortOrder = Enum.SortOrder.LayoutOrder
-	il.Padding = UDim.new(0, isMobile and 6 or 12)
+	il.Padding = UDim.new(0, 12)
 
 	local function resize()
 		local h = il.AbsoluteContentSize.Y
@@ -1500,8 +1497,8 @@ function WindowMethods:CreateTab(name, icon)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
-	content.Size = UDim2.new(1, 0, 1, -(isMobile and 20 or 40))
-	content.Position = UDim2.new(0, 0, 0, isMobile and 20 or 40)
+	content.Size = UDim2.new(1, 0, 1, -40)
+	content.Position = UDim2.new(0, 0, 0, 40)
 	content.BackgroundTransparency = 1
 	content.Parent = container
 
@@ -1518,7 +1515,7 @@ function WindowMethods:CreateTab(name, icon)
 		sf.Parent = content
 		local l = Instance.new("UIListLayout", sf)
 		l.SortOrder = Enum.SortOrder.LayoutOrder
-		l.Padding = UDim.new(0, isMobile and 6 or 12)
+		l.Padding = UDim.new(0, 12)
 		return sf
 	end
 
