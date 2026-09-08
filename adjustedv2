@@ -780,141 +780,138 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 	end)
 end
 
+-- ============================================================
+--  COLOR PICKER (SIMPLE & WORKING - from test version)
+-- ============================================================
 local function AddColorpicker(parent, labelText, defaultColor, callback)
-	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, isMobile and 28 or 24)
-	row.BackgroundTransparency = 1
-	row.Parent = parent
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 24)
+    row.BackgroundTransparency = 1
+    row.Parent = parent
 
-	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.new(0.65, 0, 1, 0)
-	lbl.Position = UDim2.new(0, 0, 0, 0)
-	lbl.BackgroundTransparency = 1
-	lbl.Text = labelText
-	lbl.TextColor3 = THEME.Text
-	lbl.TextSize = isMobile and 12 or 13
-	lbl.Font = Enum.Font.Gotham
-	lbl.TextXAlignment = Enum.TextXAlignment.Left
-	lbl.TextWrapped = true
-	lbl.Parent = row
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.6, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 0, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = THEME.Text
+    lbl.TextSize = 13
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
 
-	local preview = Instance.new("TextButton")
-	preview.Size = UDim2.new(0, isMobile and 32 or 28, 0, isMobile and 18 or 16)
-	preview.Position = UDim2.new(1, -(isMobile and 36 or 32), 0.5, -(isMobile and 9 or 8))
-	preview.BackgroundColor3 = defaultColor
-	preview.BorderSizePixel = 0
-	preview.Text = ""
-	preview.AutoButtonColor = false
-	preview.Parent = row
-	Instance.new("UICorner", preview).CornerRadius = UDim.new(0, 2)
-	markNoDrag(preview)
+    local preview = Instance.new("TextButton")
+    preview.Size = UDim2.new(0, 28, 0, 18)
+    preview.Position = UDim2.new(1, -32, 0.5, -9)
+    preview.BackgroundColor3 = defaultColor
+    preview.BorderSizePixel = 0
+    preview.Text = ""
+    preview.AutoButtonColor = false
+    preview.Parent = row
+    Instance.new("UICorner", preview).CornerRadius = UDim.new(0, 3)
+    markNoDrag(preview)
 
-	preview.MouseButton1Click:Connect(function()
-		-- Create color picker popup
-		local picker = Instance.new("Frame")
-		picker.Size = UDim2.new(0, isMobile and 200 or 220, 0, isMobile and 180 or 200)
-		picker.Position = UDim2.new(0.5, -(isMobile and 100 or 110), 0.5, -(isMobile and 90 or 100))
-		picker.BackgroundColor3 = THEME.PopupBg
-		picker.BorderSizePixel = 0
-		picker.ZIndex = 250
-		picker.Parent = MainWindow
-		Instance.new("UICorner", picker).CornerRadius = UDim.new(0, 4)
+    preview.MouseButton1Click:Connect(function()
+        -- Create picker popup
+        local picker = Instance.new("Frame")
+        picker.Size = UDim2.new(0, 200, 0, 180)
+        picker.Position = UDim2.new(0.5, -100, 0.5, -90)
+        picker.BackgroundColor3 = THEME.PopupBg
+        picker.BorderSizePixel = 0
+        picker.ZIndex = 250
+        picker.Parent = MainWindow
+        Instance.new("UICorner", picker).CornerRadius = UDim.new(0, 4)
 
-		-- Title
-		local title = Instance.new("TextLabel")
-		title.Size = UDim2.new(1, 0, 0, 30)
-		title.Position = UDim2.new(0, 0, 0, 5)
-		title.BackgroundTransparency = 1
-		title.Text = "Choose Color"
-		title.TextColor3 = THEME.Text
-		title.TextSize = 14
-		title.Font = Enum.Font.GothamBold
-		title.TextXAlignment = Enum.TextXAlignment.Center
-		title.Parent = picker
+        -- Title
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, 0, 0, 30)
+        title.Position = UDim2.new(0, 0, 0, 5)
+        title.BackgroundTransparency = 1
+        title.Text = "Choose Color"
+        title.TextColor3 = THEME.Text
+        title.TextSize = 14
+        title.Font = Enum.Font.GothamBold
+        title.TextXAlignment = Enum.TextXAlignment.Center
+        title.Parent = picker
 
-		-- Close button (X)
-		local closePickerBtn = Instance.new("TextButton")
-		closePickerBtn.Size = UDim2.new(0, 28, 0, 22)
-		closePickerBtn.Position = UDim2.new(1, -34, 0, 6)
-		closePickerBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-		closePickerBtn.Text = "✕"
-		closePickerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		closePickerBtn.TextSize = 12
-		closePickerBtn.Font = Enum.Font.GothamBold
-		closePickerBtn.ZIndex = 251
-		closePickerBtn.Parent = picker
-		Instance.new("UICorner", closePickerBtn).CornerRadius = UDim.new(0, 3)
+        -- Close button
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.new(0, 28, 0, 22)
+        closeBtn.Position = UDim2.new(1, -34, 0, 6)
+        closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+        closeBtn.Text = "✕"
+        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeBtn.TextSize = 12
+        closeBtn.Font = Enum.Font.GothamBold
+        closeBtn.ZIndex = 251
+        closeBtn.Parent = picker
+        Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 3)
+        closeBtn.MouseButton1Click:Connect(function() picker:Destroy() end)
 
-		closePickerBtn.MouseButton1Click:Connect(function()
-			picker:Destroy()
-		end)
+        -- Color grid
+        local grid = Instance.new("Frame")
+        grid.Size = UDim2.new(1, -20, 1, -45)
+        grid.Position = UDim2.new(0, 10, 0, 40)
+        grid.BackgroundTransparency = 1
+        grid.Parent = picker
 
-		-- Grid container
-		local gridContainer = Instance.new("Frame")
-		gridContainer.Size = UDim2.new(1, -(isMobile and 20 or 24), 1, -(isMobile and 55 or 60))
-		gridContainer.Position = UDim2.new(0, isMobile and 10 or 12, 0, isMobile and 40 or 45)
-		gridContainer.BackgroundTransparency = 1
-		gridContainer.Parent = picker
+        local layout = Instance.new("UIListLayout")
+        layout.FillDirection = Enum.FillDirection.Horizontal
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Padding = UDim.new(0, 8)
+        layout.Wrap = true
+        layout.Parent = grid
 
-		-- Grid layout
-		local gridLayout = Instance.new("UIListLayout")
-		gridLayout.FillDirection = Enum.FillDirection.Horizontal
-		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		gridLayout.Padding = UDim.new(0, isMobile and 6 or 8)
-		gridLayout.Wrap = true
-		gridLayout.Parent = gridContainer
+        -- Colors
+        local colors = {
+            Color3.fromRGB(255, 0, 0),
+            Color3.fromRGB(0, 255, 0),
+            Color3.fromRGB(0, 0, 255),
+            Color3.fromRGB(255, 255, 0),
+            Color3.fromRGB(255, 0, 255),
+            Color3.fromRGB(0, 255, 255),
+            Color3.fromRGB(255, 128, 0),
+            Color3.fromRGB(128, 0, 255),
+            Color3.fromRGB(0, 255, 128),
+            Color3.fromRGB(255, 128, 128),
+            Color3.fromRGB(255, 255, 255),
+            Color3.fromRGB(0, 0, 0),
+        }
 
-		-- Colors (12 colors + white + black)
-		local colors = {
-			Color3.fromRGB(255, 0, 0),
-			Color3.fromRGB(0, 255, 0),
-			Color3.fromRGB(0, 0, 255),
-			Color3.fromRGB(255, 255, 0),
-			Color3.fromRGB(255, 0, 255),
-			Color3.fromRGB(0, 255, 255),
-			Color3.fromRGB(255, 128, 0),
-			Color3.fromRGB(128, 0, 255),
-			Color3.fromRGB(0, 255, 128),
-			Color3.fromRGB(255, 128, 128),
-			Color3.fromRGB(255, 255, 255),
-			Color3.fromRGB(0, 0, 0),
-		}
+        for _, color in ipairs(colors) do
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(0, 32, 0, 32)
+            btn.BackgroundColor3 = color
+            btn.BorderSizePixel = 0
+            btn.Text = ""
+            btn.AutoButtonColor = false
+            btn.Parent = grid
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
-		for _, color in ipairs(colors) do
-			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(0, isMobile and 28 or 32, 0, isMobile and 28 or 32)
-			btn.BackgroundColor3 = color
-			btn.BorderSizePixel = 1
-			btn.BorderColor3 = THEME.Border
-			btn.Text = ""
-			btn.AutoButtonColor = false
-			btn.Parent = gridContainer
-			Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            btn.MouseButton1Click:Connect(function()
+                preview.BackgroundColor3 = color
+                if callback then callback(color) end
+                picker:Destroy()
+            end)
+        end
 
-			btn.MouseButton1Click:Connect(function()
-				preview.BackgroundColor3 = color
-				if callback then callback(color) end
-				picker:Destroy()
-			end)
-		end
-
-		-- Click outside to close
-		local closeConn
-		closeConn = UserInputService.InputBegan:Connect(function(i)
-			if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-				task.wait(0.05)
-				if picker and picker.Parent then
-					local mPos = UserInputService:GetMouseLocation()
-					local ax, ay = picker.AbsolutePosition.X, picker.AbsolutePosition.Y
-					local sx, sy = picker.AbsoluteSize.X, picker.AbsoluteSize.Y
-					if mPos.X < ax or mPos.X > ax + sx or mPos.Y < ay or mPos.Y > ay + sy then
-						picker:Destroy()
-						closeConn:Disconnect()
-					end
-				end
-			end
-		end)
-	end)
+        -- Click outside to close
+        local closeConn
+        closeConn = UserInputService.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                task.wait()
+                if picker and picker.Parent then
+                    local mPos = UserInputService:GetMouseLocation()
+                    local ax, ay = picker.AbsolutePosition.X, picker.AbsolutePosition.Y
+                    local sx, sy = picker.AbsoluteSize.X, picker.AbsoluteSize.Y
+                    if mPos.X < ax or mPos.X > ax + sx or mPos.Y < ay or mPos.Y > ay + sy then
+                        picker:Destroy()
+                        if closeConn then closeConn:Disconnect() end
+                    end
+                end
+            end
+        end)
+    end)
 end
 
 -- Button
@@ -1083,8 +1080,8 @@ end
 --  PREVIEWLIBARY API
 -- ============================================================
 local PreviewLibary = {}
+PreviewLibary.Options = PreviewLibary.Flags 
 PreviewLibary.Flags = {}
-PreviewLibary.Options = PreviewLibary.Flags
 PreviewLibary.isMobile = isMobile
 
 local tabCount = 0
