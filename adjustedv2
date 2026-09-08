@@ -1,0 +1,1019 @@
+--- v2 I Try to make it adjust to save manager 
+
+-- Main UI lib (PC & Mobile Support)
+
+local Release = "Release 1"
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- ============================================================
+--  THEME
+-- ============================================================
+local THEME = {
+    Scheme = Color3.fromRGB(209, 235, 103),
+    Text = Color3.fromRGB(255, 255, 255),
+    TextDisabled = Color3.fromRGB(97, 101, 102),
+    WindowBg = Color3.fromRGB(15, 17, 16),
+    ChildBg = Color3.fromRGB(23, 25, 24),
+    PopupBg = Color3.fromRGB(32, 35, 34),
+    Border = Color3.fromRGB(32, 35, 34),
+    FrameBg = Color3.fromRGB(32, 35, 34),
+    CheckMark = Color3.fromRGB(0, 0, 0),
+    SliderGrab = Color3.fromRGB(255, 255, 255),
+    MID = Color3.fromRGB(20, 40, 48)
+}
+
+-- ============================================================
+--  CREATE UI (PC & MOBILE - Different sizes)
+-- ============================================================
+local SettingsGui = Instance.new("ScreenGui")
+SettingsGui.Name = "RobloxianSettings"
+SettingsGui.ResetOnSpawn = false
+SettingsGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+SettingsGui.Parent = playerGui
+
+-- Mobile gets smaller UI
+local UI_WIDTH = isMobile and 450 or 650
+local UI_HEIGHT = isMobile and 350 or 480
+local NAV_WIDTH = isMobile and 40 or 50
+local NAV_EXPANDED = isMobile and 120 or 150
+local PADDING = isMobile and 4 or 8
+
+local MainWindow = Instance.new("Frame")
+MainWindow.Name = "MainWindow"
+MainWindow.Size = UDim2.new(0, UI_WIDTH, 0, UI_HEIGHT)
+MainWindow.Position = UDim2.new(0.5, -UI_WIDTH / 2, 0.5, -UI_HEIGHT / 2)
+MainWindow.BackgroundColor3 = THEME.WindowBg
+MainWindow.BorderSizePixel = 0
+MainWindow.Active = true
+MainWindow.ZIndex = 1
+MainWindow.Parent = SettingsGui
+Instance.new("UICorner", MainWindow).CornerRadius = UDim.new(0, 6)
+
+local noDrag = {}
+local function markNoDrag(gui) noDrag[gui] = true end
+
+-- ============================================================
+--  DRAGGING (PC & Mobile)
+-- ============================================================
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+MainWindow.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local objs = playerGui:GetGuiObjectsAtPosition(input.Position.X, input.Position.Y)
+        for _, obj in ipairs(objs) do
+            local node = obj
+            while node do
+                if noDrag[node] then return end
+                node = node.Parent
+            end
+        end
+        dragging = true
+        dragStart = input.Position
+        startPos = MainWindow.Position
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        MainWindow.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- ============================================================
+--  CLOSE BUTTON
+-- ============================================================
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, isMobile and 20 or 24, 0, isMobile and 20 or 24)
+closeBtn.Position = UDim2.new(1, isMobile and -26 or -32, 0, isMobile and 4 or 6)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextSize = isMobile and 12 or 14
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.ZIndex = 100
+closeBtn.Parent = MainWindow
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
+markNoDrag(closeBtn)
+
+closeBtn.MouseButton1Click:Connect(function()
+    MainWindow.Visible = false
+end)
+
+-- Open button (when closed)
+local openButton = Instance.new("ImageButton")
+openButton.Size = UDim2.new(0, isMobile and 36 or 40, 0, isMobile and 36 or 40)
+openButton.Position = UDim2.new(0.02, 0, 0.02, 0)
+openButton.BackgroundColor3 = THEME.ChildBg
+openButton.BorderSizePixel = 0
+openButton.Image = "rbxassetid://80758916183665"
+openButton.BackgroundTransparency = 0.2
+openButton.Visible = false
+openButton.Parent = SettingsGui
+Instance.new("UICorner", openButton).CornerRadius = UDim.new(1, 0)
+markNoDrag(openButton)
+
+openButton.MouseButton1Click:Connect(function()
+    MainWindow.Visible = true
+    openButton.Visible = false
+end)
+
+-- ============================================================
+--  CONTENT AREA
+-- ============================================================
+local ContentArea = Instance.new("CanvasGroup")
+ContentArea.Name = "ContentArea"
+ContentArea.Size = UDim2.new(1, -(NAV_WIDTH + 10), 1, -(isMobile and 30 or 30))
+ContentArea.Position = UDim2.new(0, NAV_WIDTH + 5, 0, isMobile and 30 or 30)
+ContentArea.BackgroundTransparency = 1
+ContentArea.BorderSizePixel = 0
+ContentArea.GroupTransparency = 0
+ContentArea.ZIndex = 2
+ContentArea.Parent = MainWindow
+
+-- ============================================================
+--  NAVBAR
+-- ============================================================
+local Navbar = Instance.new("Frame")
+Navbar.Name = "Navbar"
+Navbar.Size = UDim2.new(0, NAV_WIDTH, 1, 0)
+Navbar.BackgroundColor3 = THEME.ChildBg
+Navbar.BorderSizePixel = 0
+Navbar.ZIndex = 10
+Navbar.Parent = MainWindow
+Instance.new("UICorner", Navbar).CornerRadius = UDim.new(0, 6)
+
+-- NavScroll (scrollable tabs)
+local NavScroll = Instance.new("ScrollingFrame")
+NavScroll.Name = "NavScroll"
+NavScroll.Size = UDim2.new(1, 0, 1, -(isMobile and 80 or 100))
+NavScroll.Position = UDim2.new(0, 0, 0, isMobile and 70 or 87)
+NavScroll.BackgroundTransparency = 1
+NavScroll.BorderSizePixel = 0
+NavScroll.ScrollBarThickness = 3
+NavScroll.ScrollBarImageColor3 = THEME.Border
+NavScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+NavScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+NavScroll.ZIndex = 11
+NavScroll.Parent = Navbar
+
+local NavList = Instance.new("UIListLayout")
+NavList.SortOrder = Enum.SortOrder.LayoutOrder
+NavList.Padding = UDim.new(0, isMobile and 2 or 4)
+NavList.Parent = NavScroll
+
+-- ============================================================
+--  TAB INDICATOR
+-- ============================================================
+local TabIndicator = Instance.new("Frame")
+TabIndicator.Size = UDim2.new(0, 2, 0, isMobile and 20 or 24)
+TabIndicator.Position = UDim2.new(1, -2, 0, isMobile and 70 or 87)
+TabIndicator.BackgroundColor3 = THEME.Scheme
+TabIndicator.BorderSizePixel = 0
+TabIndicator.Visible = false
+TabIndicator.ZIndex = 12
+TabIndicator.Parent = Navbar
+Instance.new("UICorner", TabIndicator).CornerRadius = UDim.new(0, 2)
+
+-- ============================================================
+--  COLLAPSE BUTTON
+-- ============================================================
+local CollapseButton = Instance.new("ImageButton")
+CollapseButton.Size = UDim2.new(0, isMobile and 14 or 17, 0, isMobile and 14 or 17)
+CollapseButton.AnchorPoint = Vector2.new(0.5, 0.5)
+CollapseButton.Position = UDim2.new(1, 0, 0, isMobile and 70 or 87)
+CollapseButton.BackgroundColor3 = THEME.ChildBg
+CollapseButton.Image = "rbxassetid://92473583511724"
+CollapseButton.ImageColor3 = THEME.TextDisabled
+CollapseButton.ZIndex = 15
+CollapseButton.Parent = Navbar
+Instance.new("UICorner", CollapseButton).CornerRadius = UDim.new(1, 0)
+markNoDrag(CollapseButton)
+
+local navbarCollapsed = true
+local currentNavbarWidth = NAV_WIDTH
+local currentIndicatorY = isMobile and 70 or 87
+local targetIndicatorY = isMobile and 70 or 87
+local tabs = {}
+local activeTabId = nil
+
+-- ============================================================
+--  SWITCH TAB
+-- ============================================================
+local function switchTab(id)
+    if activeTabId == id then return end
+    for tabId, tabData in pairs(tabs) do
+        if tabId == id then
+            tabData.Icon.ImageColor3 = THEME.Text
+            tabData.Text.TextColor3 = THEME.Text
+            tabData.Container.Visible = true
+            tabData.Container.GroupTransparency = 0
+            targetIndicatorY = (isMobile and 70 or 87) + (id - 1) * (isMobile and 22 or 28)
+            TabIndicator.Visible = true
+        else
+            tabData.Icon.ImageColor3 = THEME.TextDisabled
+            tabData.Text.TextColor3 = THEME.TextDisabled
+            if tabData.Container.Visible then
+                tabData.Container.Visible = false
+            end
+        end
+    end
+    activeTabId = id
+end
+
+-- ============================================================
+--  RENDER LOOP
+-- ============================================================
+RunService.RenderStepped:Connect(function()
+    local tW = navbarCollapsed and NAV_WIDTH or NAV_EXPANDED
+    currentNavbarWidth = currentNavbarWidth + (tW - currentNavbarWidth) * 0.15
+    Navbar.Size = UDim2.new(0, currentNavbarWidth, 1, 0)
+    
+    currentIndicatorY = currentIndicatorY + (targetIndicatorY - currentIndicatorY) * 0.15
+    TabIndicator.Position = UDim2.new(1, -2, 0, currentIndicatorY)
+    
+    local tR = navbarCollapsed and 0 or 180
+    CollapseButton.Rotation = CollapseButton.Rotation + (tR - CollapseButton.Rotation) * 0.15
+end)
+
+CollapseButton.MouseButton1Click:Connect(function() 
+    navbarCollapsed = not navbarCollapsed 
+end)
+
+-- ============================================================
+--  ADD TAB
+-- ============================================================
+local function AddTab(id, name, icon)
+    local btn = Instance.new("TextButton")
+    btn.Name = name .. "Tab"
+    btn.Size = UDim2.new(1, 0, 0, isMobile and 22 or 24)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.ZIndex = 12
+    btn.Parent = NavScroll
+
+    local ic = Instance.new("ImageLabel")
+    ic.Size = UDim2.new(0, isMobile and 14 or 16, 0, isMobile and 14 or 16)
+    ic.Position = UDim2.new(0, isMobile and 13 or 17, 0.5, -(isMobile and 7 or 8))
+    ic.BackgroundTransparency = 1
+    ic.Image = icon or "rbxassetid://80758916183665"
+    ic.ImageColor3 = THEME.TextDisabled
+    ic.ZIndex = 13
+    ic.Parent = btn
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -(isMobile and 40 or 50), 1, 0)
+    lbl.Position = UDim2.new(0, isMobile and 40 or 50, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = name
+    lbl.TextColor3 = THEME.TextDisabled
+    lbl.TextSize = isMobile and 11 or 13
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.ClipsDescendants = true
+    lbl.ZIndex = 13
+    lbl.Parent = btn
+
+    local container = Instance.new("CanvasGroup")
+    container.Name = name .. "Container"
+    container.Size = UDim2.new(1, 0, 1, 0)
+    container.BackgroundTransparency = 1
+    container.GroupTransparency = 0
+    container.Visible = false
+    container.Parent = ContentArea
+
+    -- Title
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, isMobile and 25 or 30)
+    title.BackgroundTransparency = 1
+    title.Text = name
+    title.TextColor3 = THEME.Text
+    title.TextSize = isMobile and 18 or 22
+    title.Font = Enum.Font.GothamBold
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = container
+
+    tabs[id] = { Button = btn, Icon = ic, Text = lbl, Container = container }
+
+    markNoDrag(btn)
+    btn.MouseButton1Click:Connect(function()
+        if not navbarCollapsed then navbarCollapsed = true end
+        switchTab(id)
+    end)
+
+    return container
+end
+
+-- ============================================================
+--  UI ELEMENTS (Mobile optimized)
+-- ============================================================
+local function AddToggle(parent, labelText, default, callback)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, isMobile and 24 or 20)
+    row.BackgroundTransparency = 1
+    row.Parent = parent
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -(isMobile and 32 or 28), 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = THEME.Text
+    lbl.TextSize = isMobile and 12 or 13
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    local box = Instance.new("TextButton")
+    box.Size = UDim2.new(0, isMobile and 24 or 20, 0, isMobile and 24 or 20)
+    box.Position = UDim2.new(1, -(isMobile and 24 or 20), 0.5, -(isMobile and 12 or 10))
+    box.BackgroundColor3 = THEME.FrameBg
+    box.BorderSizePixel = 0
+    box.Text = ""
+    box.AutoButtonColor = false
+    box.Parent = row
+    markNoDrag(box)
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 3)
+
+    local chk = Instance.new("TextLabel")
+    chk.Size = UDim2.new(1, 0, 1, 0)
+    chk.BackgroundTransparency = 1
+    chk.Text = ""
+    chk.TextColor3 = THEME.CheckMark
+    chk.TextSize = isMobile and 14 or 13
+    chk.Font = Enum.Font.Gotham
+    chk.TextXAlignment = Enum.TextXAlignment.Center
+    chk.TextYAlignment = Enum.TextYAlignment.Center
+    chk.Parent = box
+
+    local enabled = default or false
+    local function updateState()
+        if enabled then
+            box.BackgroundColor3 = THEME.Scheme
+            chk.Text = "✓"
+        else
+            box.BackgroundColor3 = THEME.FrameBg
+            chk.Text = ""
+        end
+    end
+    updateState()
+
+    box.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        updateState()
+        if callback then callback(enabled) end
+    end)
+end
+
+-- ============================================================
+--  SLIDER (Mobile optimized)
+-- ============================================================
+local function AddSlider(parent, labelText, min, max, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, isMobile and 40 or 36)
+    frame.BackgroundTransparency = 1
+    frame.Parent = parent
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.55, 0, 0, isMobile and 16 or 14)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = THEME.Text
+    lbl.TextSize = isMobile and 12 or 13
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = frame
+
+    local valLbl = Instance.new("TextLabel")
+    valLbl.Size = UDim2.new(0.25, 0, 0, isMobile and 16 or 14)
+    valLbl.Position = UDim2.new(0.65, 0, 0, 0)
+    valLbl.BackgroundTransparency = 1
+    valLbl.Text = tostring(default)
+    valLbl.TextColor3 = THEME.TextDisabled
+    valLbl.TextSize = isMobile and 11 or 12
+    valLbl.Font = Enum.Font.Gotham
+    valLbl.TextXAlignment = Enum.TextXAlignment.Right
+    valLbl.Parent = frame
+
+    local bar = Instance.new("TextButton")
+    bar.Size = UDim2.new(1, 0, 0, isMobile and 10 or 8)
+    bar.Position = UDim2.new(0, 0, 0, isMobile and 28 or 24)
+    bar.BackgroundColor3 = THEME.FrameBg
+    bar.BorderSizePixel = 0
+    bar.Text = ""
+    bar.AutoButtonColor = false
+    bar.Parent = frame
+    markNoDrag(bar)
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 3)
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = THEME.Scheme
+    fill.BorderSizePixel = 0
+    fill.Parent = bar
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 3)
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, isMobile and 16 or 14, 0, isMobile and 16 or 14)
+    knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    knob.Position = UDim2.new((default - min) / (max - min), 0, 0.5, 0)
+    knob.BackgroundColor3 = THEME.SliderGrab
+    knob.BorderSizePixel = 0
+    knob.Parent = bar
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+    local dragging = false
+    local function update(input)
+        local delta = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+        fill.Size = UDim2.new(delta, 0, 1, 0)
+        knob.Position = UDim2.new(delta, 0, 0.5, 0)
+        local value = math.floor(min + (max - min) * delta)
+        valLbl.Text = tostring(value)
+        if callback then callback(value) end
+    end
+    
+    bar.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            update(i)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            update(i)
+        end
+    end)
+end
+
+-- ============================================================
+--  DROPDOWN (Mobile optimized)
+-- ============================================================
+local function AddDropdown(parent, labelText, options, defaultIndex, callback)
+    local selectedIndex = defaultIndex or 1
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, isMobile and 26 or 22)
+    row.BackgroundTransparency = 1
+    row.Parent = parent
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.4, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = THEME.Text
+    lbl.TextSize = isMobile and 12 or 13
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.55, 0, 1, 0)
+    btn.Position = UDim2.new(0.42, 0, 0, 0)
+    btn.BackgroundColor3 = THEME.FrameBg
+    btn.BorderSizePixel = 0
+    btn.Text = "  " .. options[selectedIndex]
+    btn.TextColor3 = THEME.TextDisabled
+    btn.TextSize = isMobile and 11 or 12
+    btn.Font = Enum.Font.Gotham
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.AutoButtonColor = false
+    btn.Parent = row
+    markNoDrag(btn)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 3)
+
+    local open = false
+    local listFrame = nil
+
+    local function closeList()
+        open = false
+        if listFrame then listFrame:Destroy(); listFrame = nil end
+    end
+
+    btn.MouseButton1Click:Connect(function()
+        open = not open
+        if open then
+            listFrame = Instance.new("Frame")
+            local relPos = btn.AbsolutePosition - MainWindow.AbsolutePosition
+            listFrame.Position = UDim2.new(0, relPos.X, 0, relPos.Y + btn.AbsoluteSize.Y + 2)
+            listFrame.Size = UDim2.new(0, btn.AbsoluteSize.X, 0, math.min(#options * (isMobile and 26 or 24) + 4, isMobile and 100 or 130))
+            listFrame.BackgroundColor3 = THEME.PopupBg
+            listFrame.BorderSizePixel = 0
+            listFrame.ZIndex = 200
+            listFrame.Active = true
+            listFrame.Parent = MainWindow
+            markNoDrag(listFrame)
+            Instance.new("UICorner", listFrame).CornerRadius = UDim.new(0, 3)
+
+            local scroll = Instance.new("ScrollingFrame")
+            scroll.Size = UDim2.new(1, 0, 1, 0)
+            scroll.BackgroundTransparency = 1
+            scroll.BorderSizePixel = 0
+            scroll.ScrollBarThickness = 4
+            scroll.ScrollBarImageColor3 = THEME.Border
+            scroll.CanvasSize = UDim2.new(1, 0, 0, #options * (isMobile and 26 or 24))
+            scroll.ZIndex = 201
+            scroll.Parent = listFrame
+            local sl = Instance.new("UIListLayout", scroll); sl.SortOrder = Enum.SortOrder.LayoutOrder
+
+            for idx, opt in ipairs(options) do
+                local isSelected = idx == selectedIndex
+                local optBtn = Instance.new("TextButton")
+                optBtn.Size = UDim2.new(1, 0, 0, isMobile and 26 or 24)
+                optBtn.BackgroundColor3 = THEME.PopupBg
+                optBtn.BorderSizePixel = 0
+                optBtn.Text = ""
+                optBtn.AutoButtonColor = false
+                optBtn.ZIndex = 202
+                optBtn.Parent = scroll
+
+                local optLbl = Instance.new("TextLabel")
+                optLbl.Size = UDim2.new(1, -30, 1, 0)
+                optLbl.Position = UDim2.new(0, 8, 0, 0)
+                optLbl.BackgroundTransparency = 1
+                optLbl.Text = opt
+                optLbl.TextColor3 = isSelected and THEME.Scheme or THEME.Text
+                optLbl.TextSize = isMobile and 11 or 12
+                optLbl.Font = Enum.Font.Gotham
+                optLbl.TextXAlignment = Enum.TextXAlignment.Left
+                optLbl.ZIndex = 203
+                optLbl.Parent = optBtn
+
+                optBtn.MouseButton1Click:Connect(function()
+                    selectedIndex = idx
+                    btn.Text = "  " .. opt
+                    closeList()
+                    if callback then callback(opt) end
+                end)
+            end
+        else
+            closeList()
+        end
+    end)
+
+    UserInputService.InputBegan:Connect(function(i)
+        if open and (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) then
+            task.wait()
+            if open and listFrame then
+                local mPos = UserInputService:GetMouseLocation()
+                local ax, ay = listFrame.AbsolutePosition.X, listFrame.AbsolutePosition.Y
+                local sx, sy = listFrame.AbsoluteSize.X, listFrame.AbsoluteSize.Y
+                if mPos.X < ax or mPos.X > ax + sx or mPos.Y < ay or mPos.Y > ay + sy then
+                    closeList()
+                end
+            end
+        end
+    end)
+end
+
+-- ============================================================
+--  COLOR PICKER (Mobile optimized)
+-- ============================================================
+local function AddColorpicker(parent, labelText, defaultColor, callback)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, isMobile and 24 or 20)
+    row.BackgroundTransparency = 1
+    row.Parent = parent
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.6, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = THEME.Text
+    lbl.TextSize = isMobile and 12 or 13
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    local preview = Instance.new("TextButton")
+    preview.Size = UDim2.new(0, isMobile and 32 or 28, 0, isMobile and 16 or 14)
+    preview.Position = UDim2.new(1, -(isMobile and 32 or 28), 0.5, -(isMobile and 8 or 7))
+    preview.BackgroundColor3 = defaultColor
+    preview.BorderSizePixel = 0
+    preview.Text = ""
+    preview.AutoButtonColor = false
+    preview.Parent = row
+    Instance.new("UICorner", preview).CornerRadius = UDim.new(0, 2)
+    markNoDrag(preview)
+
+    preview.MouseButton1Click:Connect(function()
+        local colors = {
+            Color3.fromRGB(255, 70, 70), Color3.fromRGB(70, 255, 70),
+            Color3.fromRGB(70, 70, 255), Color3.fromRGB(255, 255, 70),
+            Color3.fromRGB(255, 70, 255), Color3.fromRGB(70, 255, 255),
+            Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 140, 0),
+            Color3.fromRGB(140, 0, 255), Color3.fromRGB(0, 255, 140),
+        }
+        
+        local picker = Instance.new("Frame")
+        picker.Size = UDim2.new(0, isMobile and 180 or 200, 0, isMobile and 130 or 150)
+        picker.Position = UDim2.new(0.5, -(isMobile and 90 or 100), 0.5, -(isMobile and 65 or 75))
+        picker.BackgroundColor3 = THEME.PopupBg
+        picker.BorderSizePixel = 0
+        picker.ZIndex = 250
+        picker.Parent = MainWindow
+        Instance.new("UICorner", picker).CornerRadius = UDim.new(0, 4)
+        
+        local grid = Instance.new("Frame")
+        grid.Size = UDim2.new(1, -(isMobile and 16 or 20), 1, -(isMobile and 16 or 20))
+        grid.Position = UDim2.new(0, isMobile and 8 or 10, 0, isMobile and 8 or 10)
+        grid.BackgroundTransparency = 1
+        grid.Parent = picker
+        
+        local ul = Instance.new("UIListLayout", grid)
+        ul.FillDirection = Enum.FillDirection.Horizontal
+        ul.SortOrder = Enum.SortOrder.LayoutOrder
+        ul.Padding = UDim.new(0, isMobile and 6 or 8)
+        ul.Wrap = true
+        
+        for _, color in ipairs(colors) do
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(0, isMobile and 24 or 28, 0, isMobile and 24 or 28)
+            btn.BackgroundColor3 = color
+            btn.BorderSizePixel = 0
+            btn.Text = ""
+            btn.AutoButtonColor = false
+            btn.Parent = grid
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            
+            btn.MouseButton1Click:Connect(function()
+                preview.BackgroundColor3 = color
+                if callback then callback(color) end
+                picker:Destroy()
+            end)
+        end
+        
+        local closeConn
+        closeConn = UserInputService.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                task.wait()
+                local mPos = UserInputService:GetMouseLocation()
+                local ax, ay = picker.AbsolutePosition.X, picker.AbsolutePosition.Y
+                local sx, sy = picker.AbsoluteSize.X, picker.AbsoluteSize.Y
+                if mPos.X < ax or mPos.X > ax + sx or mPos.Y < ay or mPos.Y > ay + sy then
+                    picker:Destroy()
+                    closeConn:Disconnect()
+                end
+            end
+        end)
+    end)
+end
+
+-- ============================================================
+--  BUTTON, LABEL, INPUT
+-- ============================================================
+local function AddButton(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, isMobile and 26 or 22)
+    btn.BackgroundColor3 = THEME.FrameBg
+    btn.BorderSizePixel = 0
+    btn.Text = text
+    btn.TextColor3 = THEME.Text
+    btn.TextSize = isMobile and 12 or 13
+    btn.Font = Enum.Font.Gotham
+    btn.AutoButtonColor = false
+    btn.Parent = parent
+    markNoDrag(btn)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 3)
+    
+    btn.MouseButton1Click:Connect(callback)
+end
+
+local function AddLabel(parent, text)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, 0, 0, isMobile and 24 or 20)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = THEME.Text
+    lbl.TextSize = isMobile and 12 or 13
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = parent
+end
+
+local function AddInput(parent, labelText, placeholder, callback)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, isMobile and 26 or 22)
+    row.BackgroundTransparency = 1
+    row.Parent = parent
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.4, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = THEME.Text
+    lbl.TextSize = isMobile and 12 or 13
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    local boxFrame = Instance.new("Frame")
+    boxFrame.Size = UDim2.new(0.55, 0, 1, 0)
+    boxFrame.Position = UDim2.new(0.42, 0, 0, 0)
+    boxFrame.BackgroundColor3 = THEME.FrameBg
+    boxFrame.BorderSizePixel = 0
+    boxFrame.Parent = row
+    Instance.new("UICorner", boxFrame).CornerRadius = UDim.new(0, 3)
+
+    local tb = Instance.new("TextBox")
+    tb.Size = UDim2.new(1, -12, 1, 0)
+    tb.Position = UDim2.new(0, 6, 0, 0)
+    tb.BackgroundTransparency = 1
+    tb.Text = ""
+    tb.PlaceholderText = placeholder or ""
+    tb.TextColor3 = THEME.Text
+    tb.PlaceholderColor3 = THEME.TextDisabled
+    tb.TextSize = isMobile and 11 or 12
+    tb.Font = Enum.Font.Gotham
+    tb.TextXAlignment = Enum.TextXAlignment.Left
+    tb.ClearTextOnFocus = false
+    tb.Parent = boxFrame
+    markNoDrag(tb)
+
+    tb.FocusLost:Connect(function()
+        if callback then callback(tb.Text) end
+    end)
+end
+
+-- ============================================================
+--  MAKE SECTION
+-- ============================================================
+local function makeSection(column, name)
+    local hasHeader = name ~= nil and name ~= ""
+    local headerH = hasHeader and (isMobile and 35 or 40) or (isMobile and 4 or 6)
+
+    local box = Instance.new("Frame")
+    box.Size = UDim2.new(1, 0, 0, headerH + (isMobile and 15 or 20))
+    box.BackgroundColor3 = THEME.Border
+    box.BorderSizePixel = 0
+    box.Parent = column
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, -2, 1, -2)
+    bg.Position = UDim2.new(0, 1, 0, 1)
+    bg.BackgroundColor3 = THEME.ChildBg
+    bg.BorderSizePixel = 0
+    bg.Parent = box
+    Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 3)
+
+    if hasHeader then
+        local hdr = Instance.new("TextLabel")
+        hdr.Size = UDim2.new(1, -30, 0, (isMobile and 35 or 40))
+        hdr.Position = UDim2.new(0, 15, 0, 0)
+        hdr.BackgroundTransparency = 1
+        hdr.Text = name
+        hdr.TextColor3 = THEME.Text
+        hdr.TextSize = isMobile and 12 or 13
+        hdr.Font = Enum.Font.GothamBold
+        hdr.TextXAlignment = Enum.TextXAlignment.Left
+        hdr.Parent = bg
+    end
+
+    local inner = Instance.new("Frame")
+    inner.Name = "Inner"
+    inner.Size = UDim2.new(1, -30, 0, 0)
+    inner.Position = UDim2.new(0, 15, 0, headerH + (isMobile and 4 or 5))
+    inner.BackgroundTransparency = 1
+    inner.Parent = bg
+    local il = Instance.new("UIListLayout", inner)
+    il.SortOrder = Enum.SortOrder.LayoutOrder
+    il.Padding = UDim.new(0, isMobile and 8 or 12)
+
+    local function resize()
+        local h = il.AbsoluteContentSize.Y
+        inner.Size = UDim2.new(1, -30, 0, h)
+        box.Size = UDim2.new(1, 0, 0, headerH + (isMobile and 4 or 5) + h + (isMobile and 12 or 15))
+    end
+    il:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(resize)
+    resize()
+
+    return inner
+end
+
+-- ============================================================
+--  PREVIEWLIBARY API
+-- ============================================================
+local PreviewLibary = {}
+PreviewLibary.Flags = {}
+PreviewLibary.Options = PreviewLibary.Flags
+PreviewLibary.isMobile = isMobile
+
+local tabCount = 0
+
+local ElementMethods = {}
+
+function ElementMethods:CreateButton(cfg)
+    cfg = cfg or {}
+    AddButton(self.Inner, cfg.Name or "Button", function()
+        if cfg.Callback then cfg.Callback() end
+    end)
+    return {}
+end
+
+function ElementMethods:CreateToggle(cfg)
+    cfg = cfg or {}
+    local flag = cfg.Flag
+    local value = cfg.CurrentValue or false
+    if flag then PreviewLibary.Flags[flag] = value end
+    AddToggle(self.Inner, cfg.Name or "Toggle", value, function(v)
+        if flag then PreviewLibary.Flags[flag] = v end
+        if cfg.Callback then cfg.Callback(v) end
+    end)
+    return {}
+end
+
+function ElementMethods:CreateSlider(cfg)
+    cfg = cfg or {}
+    local range = cfg.Range or {0, 100}
+    local flag = cfg.Flag
+    local value = cfg.CurrentValue or range[1]
+    if flag then PreviewLibary.Flags[flag] = value end
+    AddSlider(self.Inner, cfg.Name or "Slider", range[1], range[2], value, function(v)
+        if flag then PreviewLibary.Flags[flag] = v end
+        if cfg.Callback then cfg.Callback(v) end
+    end)
+    return {}
+end
+
+function ElementMethods:CreateDropdown(cfg)
+    cfg = cfg or {}
+    local options = cfg.Options or {}
+    local defaultIndex = 1
+    if cfg.CurrentOption then
+        for i, o in ipairs(options) do
+            if o == cfg.CurrentOption then defaultIndex = i break end
+        end
+    end
+    local flag = cfg.Flag
+    if flag then PreviewLibary.Flags[flag] = options[defaultIndex] end
+    AddDropdown(self.Inner, cfg.Name or "Dropdown", options, defaultIndex, function(opt)
+        if flag then PreviewLibary.Flags[flag] = opt end
+        if cfg.Callback then cfg.Callback(opt) end
+    end)
+    
+    return {
+        Refresh = function(self, newOptions) end,
+        SetValue = function(self, value)
+            if flag then PreviewLibary.Flags[flag] = value end
+            if cfg.Callback then cfg.Callback(value) end
+        end,
+        GetValue = function(self)
+            if flag then return PreviewLibary.Flags[flag] end
+            return nil
+        end
+    }
+end
+
+function ElementMethods:CreateColorPicker(cfg)
+    cfg = cfg or {}
+    local flag = cfg.Flag
+    local color = cfg.Color or Color3.fromRGB(255, 255, 255)
+    if flag then PreviewLibary.Flags[flag] = color end
+    AddColorpicker(self.Inner, cfg.Name or "Color Picker", color, function(c)
+        if flag then PreviewLibary.Flags[flag] = c end
+        if cfg.Callback then cfg.Callback(c) end
+    end)
+    return {}
+end
+
+function ElementMethods:CreateInput(cfg)
+    cfg = cfg or {}
+    AddInput(self.Inner, cfg.Name or "Input", cfg.PlaceholderText or "", function(txt)
+        if cfg.Callback then cfg.Callback(txt) end
+    end)
+    return {}
+end
+
+function ElementMethods:CreateLabel(text)
+    AddLabel(self.Inner, tostring(text))
+    return {}
+end
+
+function ElementMethods:CreateParagraph(cfg)
+    cfg = cfg or {}
+    if cfg.Title then
+        AddLabel(self.Inner, cfg.Title)
+    end
+    if cfg.Content then
+        AddLabel(self.Inner, cfg.Content)
+    end
+    return {}
+end
+
+-- Tab Methods
+local TabMethods = {}
+
+function TabMethods:CreateSection(name)
+    self._colToggle = not self._colToggle
+    local col = self._colToggle and self.Left or self.Right
+    local inner = makeSection(col, name)
+    return setmetatable({ Inner = inner, _tab = self }, { __index = ElementMethods })
+end
+
+local function tabDefaultSection(tab)
+    if not tab._default then
+        tab._default = tab:CreateSection(nil)
+    end
+    return tab._default
+end
+
+for methodName, fn in pairs(ElementMethods) do
+    TabMethods[methodName] = function(self, ...)
+        return fn(tabDefaultSection(self), ...)
+    end
+end
+
+-- Window Methods
+local WindowMethods = {}
+
+function WindowMethods:CreateTab(name, icon)
+    tabCount = tabCount + 1
+    local id = tabCount
+    local container = AddTab(id, name or ("Tab " .. id), icon or "rbxassetid://80758916183665")
+
+    local content = Instance.new("Frame")
+    content.Name = "Content"
+    content.Size = UDim2.new(1, 0, 1, -(isMobile and 35 or 40))
+    content.Position = UDim2.new(0, 0, 0, isMobile and 35 or 40)
+    content.BackgroundTransparency = 1
+    content.Parent = container
+
+    local function makeColumn(xScale, xOff)
+        local sf = Instance.new("ScrollingFrame")
+        sf.Size = UDim2.new(0.5, -(isMobile and 4 or 8), 1, 0)
+        sf.Position = UDim2.new(xScale, xOff, 0, 0)
+        sf.BackgroundTransparency = 1
+        sf.BorderSizePixel = 0
+        sf.ScrollBarThickness = isMobile and 2 or 4
+        sf.ScrollBarImageColor3 = THEME.Border
+        sf.CanvasSize = UDim2.new(0, 0, 0, 0)
+        sf.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        sf.Parent = content
+        local l = Instance.new("UIListLayout", sf)
+        l.SortOrder = Enum.SortOrder.LayoutOrder
+        l.Padding = UDim.new(0, isMobile and 8 or 12)
+        return sf
+    end
+
+    local tab = setmetatable({
+        _id = id,
+        Container = container,
+        Left = makeColumn(0, 0),
+        Right = makeColumn(0.5, isMobile and 4 or 8),
+        _colToggle = false,
+        _default = nil,
+    }, { __index = TabMethods })
+
+    if id == 1 then switchTab(1) end
+    return tab
+end
+
+function PreviewLibary:CreateWindow(settings)
+    settings = settings or {}
+    if settings.Name then SettingsGui.Name = tostring(settings.Name) end
+    return setmetatable({}, { __index = WindowMethods })
+end
+
+-- SaveManager compatibility
+function PreviewLibary:ApplyFlags(flags)
+    if not flags then return end
+    for key, value in pairs(flags) do
+        if self.Flags[key] ~= nil then
+            self.Flags[key] = value
+        end
+    end
+end
+
+function PreviewLibary:Notify(data)
+    data = data or {}
+    print("🔔 " .. (data.Title or "Notification") .. ": " .. (data.Content or ""))
+end
+
+return PreviewLibary
