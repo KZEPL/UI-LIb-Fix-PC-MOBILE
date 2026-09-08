@@ -129,18 +129,63 @@ minimizeBtn.Parent = MainWindow
 Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 4)
 markNoDrag(minimizeBtn)
 
--- Open button (appears when window is closed)
+-- ============================================================
+--  OPEN BUTTON (appears when window is closed) - FIXED
+-- ============================================================
 local openButton = Instance.new("ImageButton")
-openButton.Size = UDim2.new(0, isMobile and 40 or 45, 0, isMobile and 40 or 45)
+openButton.Size = UDim2.new(0, isMobile and 50 or 55, 0, isMobile and 50 or 55)
 openButton.Position = UDim2.new(0.02, 0, 0.02, 0)
 openButton.BackgroundColor3 = THEME.ChildBg
 openButton.BorderSizePixel = 0
-openButton.Image = "rbxassetid://80758916183665"
+openButton.Image = "rbxassetid://109578957492871"
 openButton.BackgroundTransparency = 0.2
 openButton.Visible = false
+openButton.ZIndex = 100
 openButton.Parent = SettingsGui
-Instance.new("UICorner", openButton).CornerRadius = UDim.new(1, 0)
+-- Small corner radius (only slightly rounded)
+Instance.new("UICorner", openButton).CornerRadius = UDim.new(0, 8)
 markNoDrag(openButton)
+
+-- Make open button draggable (PC & Mobile)
+local openDrag = false
+local openDragStart = nil
+local openStartPos = nil
+
+openButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        openDrag = true
+        openDragStart = input.Position
+        openStartPos = openButton.Position
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        openDrag = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if openDrag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - openDragStart
+        openButton.Position = UDim2.new(
+            openStartPos.X.Scale,
+            openStartPos.X.Offset + delta.X,
+            openStartPos.Y.Scale,
+            openStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Open button click to show main window
+openButton.MouseButton1Click:Connect(function()
+    MainWindow.Visible = true
+    openButton.Visible = false
+    if floatingBar then
+        floatingBar:Destroy()
+        floatingBar = nil
+    end
+end)
 
 -- Close functionality
 closeBtn.MouseButton1Click:Connect(function()
