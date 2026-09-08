@@ -1,4 +1,4 @@
--- Main UI lib (PC Only - Fixed Window & Tabs)
+-- Main UI lib (PC Only - Fixed Window & Tabs) - WITH SAVEMANAGER SUPPORT
 
 local Release = "Release 1"
 
@@ -154,6 +154,9 @@ MainWindow.Parent = SettingsGui
 Instance.new("UICorner", MainWindow).CornerRadius = UDim.new(0, 6)
 local mwStroke = Instance.new("UIStroke", MainWindow)
 mwStroke.Color = THEME.Border; mwStroke.Thickness = 1
+
+-- Store main window reference for notifications
+_G._PreviewLibary_MainWindow = MainWindow
 
 -- ============================================================
 --  DRAGGING (WHOLE WINDOW)
@@ -1378,7 +1381,9 @@ end
 -- ============================================================
 local PreviewLibary = {}
 PreviewLibary.Flags = {}
+PreviewLibary.Options = PreviewLibary.Flags  -- For SaveManager compatibility
 PreviewLibary.Release = Release
+PreviewLibary._dropdowns = {}  -- Store dropdowns for refresh
 
 local tabCount = 0
 
@@ -1428,11 +1433,41 @@ function ElementMethods:CreateDropdown(cfg)
 	end
 	local flag = cfg.Flag
 	if flag then PreviewLibary.Flags[flag] = options[defaultIndex] end
+	
+	-- Store dropdown data
+	local dropdownData = {
+		options = options,
+		defaultIndex = defaultIndex,
+		currentValue = options[defaultIndex],
+		callback = cfg.Callback,
+		flag = flag,
+	}
+	
 	AddDropdown(self.Inner, cfg.Name or "Dropdown", options, defaultIndex, function(opt)
+		dropdownData.currentValue = opt
 		if flag then PreviewLibary.Flags[flag] = opt end
 		if cfg.Callback then cfg.Callback(opt) end
 	end)
-	return {}
+	
+	table.insert(PreviewLibary._dropdowns, dropdownData)
+	
+	-- Return dropdown methods
+	return {
+		Refresh = function(self, newOptions)
+			if not newOptions or #newOptions == 0 then
+				newOptions = {"No configs"}
+			end
+			dropdownData.options = newOptions
+		end,
+		SetValue = function(self, value)
+			dropdownData.currentValue = value
+			if flag then PreviewLibary.Flags[flag] = value end
+			if dropdownData.callback then dropdownData.callback(value) end
+		end,
+		GetValue = function(self)
+			return dropdownData.currentValue
+		end
+	}
 end
 
 function ElementMethods:CreateColorPicker(cfg)
@@ -1537,5 +1572,31 @@ function PreviewLibary:CreateWindow(settings)
 	if settings.Name then SettingsGui.Name = tostring(settings.Name) end
 	return setmetatable({}, { __index = WindowMethods })
 end
+
+-- ============================================================
+--  SAVEMANAGER INTEGRATION
+-- ============================================================
+
+-- ApplyFlags method for SaveManager
+function PreviewLibary:ApplyFlags(flags)
+	if not flags then return end
+	for key, value in pairs(flags) do
+		if self.Flags[key] ~= nil then
+			self.Flags[key] = value
+		end
+	end
+end
+
+-- Notify method for SaveManager
+function PreviewLibary:Notify(data)
+	data = data or {}
+	local title = data.Title or "Notification"
+	local content = data.Content or ""
+	local duration = data.Duration or 5
+end
+
+-- ============================================================
+--  END OF SAVEMANAGER INTEGRATION
+-- ============================================================
 
 return PreviewLibary
