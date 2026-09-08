@@ -39,9 +39,10 @@ SettingsGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 SettingsGui.Parent = playerGui
 
 local UI_WIDTH = isMobile and 450 or 650
-local UI_HEIGHT = isMobile and 400 or 500
+local UI_HEIGHT = isMobile and 400 or 500 
 local NAV_WIDTH = isMobile and 40 or 50
 local NAV_EXPANDED = isMobile and 120 or 150
+local PADDING = isMobile and 4 or 8
 
 local MainWindow = Instance.new("Frame")
 MainWindow.Name = "MainWindow"
