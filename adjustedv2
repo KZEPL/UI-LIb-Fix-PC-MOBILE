@@ -1,5 +1,4 @@
---- v2 I Try to make it adjust to save manager 
-
+--- v2 Fixed - Labels and Sections now properly handle long text
 -- Main UI lib (PC & Mobile Support)
 
 local Release = "Release 1"
@@ -42,7 +41,7 @@ SettingsGui.Parent = playerGui
 
 -- Mobile gets smaller UI
 local UI_WIDTH = isMobile and 450 or 650
-local UI_HEIGHT = isMobile and 350 or 480
+local UI_HEIGHT = isMobile and 400 or 500  -- Increased height for better visibility
 local NAV_WIDTH = isMobile and 40 or 50
 local NAV_EXPANDED = isMobile and 120 or 150
 local PADDING = isMobile and 4 or 8
@@ -141,7 +140,7 @@ openButton.MouseButton1Click:Connect(function()
 end)
 
 -- ============================================================
---  CONTENT AREA
+--  CONTENT AREA (with padding to prevent clipping)
 -- ============================================================
 local ContentArea = Instance.new("CanvasGroup")
 ContentArea.Name = "ContentArea"
@@ -152,6 +151,13 @@ ContentArea.BorderSizePixel = 0
 ContentArea.GroupTransparency = 0
 ContentArea.ZIndex = 2
 ContentArea.Parent = MainWindow
+
+-- Add a clipping container to prevent overflow
+local ClipContainer = Instance.new("Frame")
+ClipContainer.Size = UDim2.new(1, 0, 1, 0)
+ClipContainer.BackgroundTransparency = 1
+ClipContainer.ClipsDescendants = true
+ClipContainer.Parent = ContentArea
 
 -- ============================================================
 --  NAVBAR
@@ -250,10 +256,10 @@ RunService.RenderStepped:Connect(function()
     local tW = navbarCollapsed and NAV_WIDTH or NAV_EXPANDED
     currentNavbarWidth = currentNavbarWidth + (tW - currentNavbarWidth) * 0.15
     Navbar.Size = UDim2.new(0, currentNavbarWidth, 1, 0)
-    
+
     currentIndicatorY = currentIndicatorY + (targetIndicatorY - currentIndicatorY) * 0.15
     TabIndicator.Position = UDim2.new(1, -2, 0, currentIndicatorY)
-    
+
     local tR = navbarCollapsed and 0 or 180
     CollapseButton.Rotation = CollapseButton.Rotation + (tR - CollapseButton.Rotation) * 0.15
 end)
@@ -302,11 +308,12 @@ local function AddTab(id, name, icon)
     container.BackgroundTransparency = 1
     container.GroupTransparency = 0
     container.Visible = false
-    container.Parent = ContentArea
+    container.Parent = ClipContainer  -- Parent to ClipContainer instead of ContentArea
 
     -- Title
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, isMobile and 25 or 30)
+    title.Size = UDim2.new(1, -20, 0, isMobile and 25 or 30)
+    title.Position = UDim2.new(0, 10, 0, 0)
     title.BackgroundTransparency = 1
     title.Text = name
     title.TextColor3 = THEME.Text
@@ -327,27 +334,30 @@ local function AddTab(id, name, icon)
 end
 
 -- ============================================================
---  UI ELEMENTS (Mobile optimized)
+--  UI ELEMENTS (Mobile optimized - FIXED LABEL WRAPPING)
 -- ============================================================
 local function AddToggle(parent, labelText, default, callback)
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, isMobile and 24 or 20)
+    row.Size = UDim2.new(1, 0, 0, isMobile and 28 or 24)  -- Increased height for multi-line
     row.BackgroundTransparency = 1
     row.Parent = parent
 
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -(isMobile and 32 or 28), 1, 0)
+    lbl.Size = UDim2.new(1, -(isMobile and 36 or 32), 1, 0)
+    lbl.Position = UDim2.new(0, 0, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = labelText
     lbl.TextColor3 = THEME.Text
     lbl.TextSize = isMobile and 12 or 13
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextWrapped = true  -- Enable text wrapping
+    lbl.TextYAlignment = Enum.TextYAlignment.Center
     lbl.Parent = row
 
     local box = Instance.new("TextButton")
     box.Size = UDim2.new(0, isMobile and 24 or 20, 0, isMobile and 24 or 20)
-    box.Position = UDim2.new(1, -(isMobile and 24 or 20), 0.5, -(isMobile and 12 or 10))
+    box.Position = UDim2.new(1, -(isMobile and 28 or 24), 0.5, -(isMobile and 12 or 10))
     box.BackgroundColor3 = THEME.FrameBg
     box.BorderSizePixel = 0
     box.Text = ""
@@ -391,23 +401,25 @@ end
 -- ============================================================
 local function AddSlider(parent, labelText, min, max, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, isMobile and 40 or 36)
+    frame.Size = UDim2.new(1, 0, 0, isMobile and 44 or 40)  -- Increased height
     frame.BackgroundTransparency = 1
     frame.Parent = parent
 
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.55, 0, 0, isMobile and 16 or 14)
+    lbl.Size = UDim2.new(0.6, 0, 0, isMobile and 18 or 14)  -- Widen label area
+    lbl.Position = UDim2.new(0, 0, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = labelText
     lbl.TextColor3 = THEME.Text
     lbl.TextSize = isMobile and 12 or 13
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextWrapped = true  -- Enable wrapping
     lbl.Parent = frame
 
     local valLbl = Instance.new("TextLabel")
-    valLbl.Size = UDim2.new(0.25, 0, 0, isMobile and 16 or 14)
-    valLbl.Position = UDim2.new(0.65, 0, 0, 0)
+    valLbl.Size = UDim2.new(0.15, 0, 0, isMobile and 18 or 14)  -- Make smaller
+    valLbl.Position = UDim2.new(0.8, 0, 0, 0)
     valLbl.BackgroundTransparency = 1
     valLbl.Text = tostring(default)
     valLbl.TextColor3 = THEME.TextDisabled
@@ -418,7 +430,7 @@ local function AddSlider(parent, labelText, min, max, default, callback)
 
     local bar = Instance.new("TextButton")
     bar.Size = UDim2.new(1, 0, 0, isMobile and 10 or 8)
-    bar.Position = UDim2.new(0, 0, 0, isMobile and 28 or 24)
+    bar.Position = UDim2.new(0, 0, 0, isMobile and 30 or 26)
     bar.BackgroundColor3 = THEME.FrameBg
     bar.BorderSizePixel = 0
     bar.Text = ""
@@ -452,20 +464,20 @@ local function AddSlider(parent, labelText, min, max, default, callback)
         valLbl.Text = tostring(value)
         if callback then callback(value) end
     end
-    
+
     bar.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             update(i)
         end
     end)
-    
+
     UserInputService.InputEnded:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
-    
+
     UserInputService.InputChanged:Connect(function(i)
         if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
             update(i)
@@ -474,28 +486,30 @@ local function AddSlider(parent, labelText, min, max, default, callback)
 end
 
 -- ============================================================
---  DROPDOWN (Mobile optimized)
+--  DROPDOWN (Mobile optimized - FIXED)
 -- ============================================================
 local function AddDropdown(parent, labelText, options, defaultIndex, callback)
     local selectedIndex = defaultIndex or 1
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, isMobile and 26 or 22)
+    row.Size = UDim2.new(1, 0, 0, isMobile and 30 or 26)  -- Increased height
     row.BackgroundTransparency = 1
     row.Parent = parent
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.4, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 0, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = labelText
     lbl.TextColor3 = THEME.Text
     lbl.TextSize = isMobile and 12 or 13
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextWrapped = true
     lbl.Parent = row
 
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.55, 0, 1, 0)
-    btn.Position = UDim2.new(0.42, 0, 0, 0)
+    btn.Size = UDim2.new(0.5, 0, 1, 0)  -- Slightly wider
+    btn.Position = UDim2.new(0.45, 0, 0, 0)
     btn.BackgroundColor3 = THEME.FrameBg
     btn.BorderSizePixel = 0
     btn.Text = "  " .. options[selectedIndex]
@@ -522,7 +536,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
             listFrame = Instance.new("Frame")
             local relPos = btn.AbsolutePosition - MainWindow.AbsolutePosition
             listFrame.Position = UDim2.new(0, relPos.X, 0, relPos.Y + btn.AbsoluteSize.Y + 2)
-            listFrame.Size = UDim2.new(0, btn.AbsoluteSize.X, 0, math.min(#options * (isMobile and 26 or 24) + 4, isMobile and 100 or 130))
+            listFrame.Size = UDim2.new(0, btn.AbsoluteSize.X, 0, math.min(#options * (isMobile and 30 or 24) + 4, isMobile and 120 or 150))  -- Increased max height
             listFrame.BackgroundColor3 = THEME.PopupBg
             listFrame.BorderSizePixel = 0
             listFrame.ZIndex = 200
@@ -537,7 +551,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
             scroll.BorderSizePixel = 0
             scroll.ScrollBarThickness = 4
             scroll.ScrollBarImageColor3 = THEME.Border
-            scroll.CanvasSize = UDim2.new(1, 0, 0, #options * (isMobile and 26 or 24))
+            scroll.CanvasSize = UDim2.new(1, 0, 0, #options * (isMobile and 30 or 24))
             scroll.ZIndex = 201
             scroll.Parent = listFrame
             local sl = Instance.new("UIListLayout", scroll); sl.SortOrder = Enum.SortOrder.LayoutOrder
@@ -545,7 +559,7 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
             for idx, opt in ipairs(options) do
                 local isSelected = idx == selectedIndex
                 local optBtn = Instance.new("TextButton")
-                optBtn.Size = UDim2.new(1, 0, 0, isMobile and 26 or 24)
+                optBtn.Size = UDim2.new(1, 0, 0, isMobile and 30 or 24)
                 optBtn.BackgroundColor3 = THEME.PopupBg
                 optBtn.BorderSizePixel = 0
                 optBtn.Text = ""
@@ -593,27 +607,29 @@ local function AddDropdown(parent, labelText, options, defaultIndex, callback)
 end
 
 -- ============================================================
---  COLOR PICKER (Mobile optimized)
+--  COLOR PICKER (Mobile optimized - FIXED)
 -- ============================================================
 local function AddColorpicker(parent, labelText, defaultColor, callback)
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, isMobile and 24 or 20)
+    row.Size = UDim2.new(1, 0, 0, isMobile and 28 or 24)  -- Increased height
     row.BackgroundTransparency = 1
     row.Parent = parent
 
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.6, 0, 1, 0)
+    lbl.Size = UDim2.new(0.65, 0, 1, 0)  -- Wider
+    lbl.Position = UDim2.new(0, 0, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = labelText
     lbl.TextColor3 = THEME.Text
     lbl.TextSize = isMobile and 12 or 13
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextWrapped = true
     lbl.Parent = row
 
     local preview = Instance.new("TextButton")
     preview.Size = UDim2.new(0, isMobile and 32 or 28, 0, isMobile and 16 or 14)
-    preview.Position = UDim2.new(1, -(isMobile and 32 or 28), 0.5, -(isMobile and 8 or 7))
+    preview.Position = UDim2.new(1, -(isMobile and 36 or 32), 0.5, -(isMobile and 8 or 7))
     preview.BackgroundColor3 = defaultColor
     preview.BorderSizePixel = 0
     preview.Text = ""
@@ -630,7 +646,7 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
             Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 140, 0),
             Color3.fromRGB(140, 0, 255), Color3.fromRGB(0, 255, 140),
         }
-        
+
         local picker = Instance.new("Frame")
         picker.Size = UDim2.new(0, isMobile and 180 or 200, 0, isMobile and 130 or 150)
         picker.Position = UDim2.new(0.5, -(isMobile and 90 or 100), 0.5, -(isMobile and 65 or 75))
@@ -639,19 +655,19 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
         picker.ZIndex = 250
         picker.Parent = MainWindow
         Instance.new("UICorner", picker).CornerRadius = UDim.new(0, 4)
-        
+
         local grid = Instance.new("Frame")
         grid.Size = UDim2.new(1, -(isMobile and 16 or 20), 1, -(isMobile and 16 or 20))
         grid.Position = UDim2.new(0, isMobile and 8 or 10, 0, isMobile and 8 or 10)
         grid.BackgroundTransparency = 1
         grid.Parent = picker
-        
+
         local ul = Instance.new("UIListLayout", grid)
         ul.FillDirection = Enum.FillDirection.Horizontal
         ul.SortOrder = Enum.SortOrder.LayoutOrder
         ul.Padding = UDim.new(0, isMobile and 6 or 8)
         ul.Wrap = true
-        
+
         for _, color in ipairs(colors) do
             local btn = Instance.new("TextButton")
             btn.Size = UDim2.new(0, isMobile and 24 or 28, 0, isMobile and 24 or 28)
@@ -661,14 +677,14 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
             btn.AutoButtonColor = false
             btn.Parent = grid
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-            
+
             btn.MouseButton1Click:Connect(function()
                 preview.BackgroundColor3 = color
                 if callback then callback(color) end
                 picker:Destroy()
             end)
         end
-        
+
         local closeConn
         closeConn = UserInputService.InputBegan:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
@@ -686,11 +702,11 @@ local function AddColorpicker(parent, labelText, defaultColor, callback)
 end
 
 -- ============================================================
---  BUTTON, LABEL, INPUT
+--  BUTTON, LABEL, INPUT (FIXED)
 -- ============================================================
 local function AddButton(parent, text, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, isMobile and 26 or 22)
+    btn.Size = UDim2.new(1, 0, 0, isMobile and 30 or 26)  -- Increased height
     btn.BackgroundColor3 = THEME.FrameBg
     btn.BorderSizePixel = 0
     btn.Text = text
@@ -701,41 +717,45 @@ local function AddButton(parent, text, callback)
     btn.Parent = parent
     markNoDrag(btn)
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 3)
-    
+
     btn.MouseButton1Click:Connect(callback)
 end
 
 local function AddLabel(parent, text)
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, 0, 0, isMobile and 24 or 20)
+    lbl.Size = UDim2.new(1, 0, 0, isMobile and 28 or 24)  -- Increased height
     lbl.BackgroundTransparency = 1
     lbl.Text = text
     lbl.TextColor3 = THEME.Text
     lbl.TextSize = isMobile and 12 or 13
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextWrapped = true  -- Enable wrapping for long text
+    lbl.TextYAlignment = Enum.TextYAlignment.Center
     lbl.Parent = parent
 end
 
 local function AddInput(parent, labelText, placeholder, callback)
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, isMobile and 26 or 22)
+    row.Size = UDim2.new(1, 0, 0, isMobile and 30 or 26)  -- Increased height
     row.BackgroundTransparency = 1
     row.Parent = parent
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(0.4, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 0, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = labelText
     lbl.TextColor3 = THEME.Text
     lbl.TextSize = isMobile and 12 or 13
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextWrapped = true
     lbl.Parent = row
 
     local boxFrame = Instance.new("Frame")
-    boxFrame.Size = UDim2.new(0.55, 0, 1, 0)
-    boxFrame.Position = UDim2.new(0.42, 0, 0, 0)
+    boxFrame.Size = UDim2.new(0.5, 0, 1, 0)  -- Wider
+    boxFrame.Position = UDim2.new(0.45, 0, 0, 0)
     boxFrame.BackgroundColor3 = THEME.FrameBg
     boxFrame.BorderSizePixel = 0
     boxFrame.Parent = row
@@ -762,14 +782,14 @@ local function AddInput(parent, labelText, placeholder, callback)
 end
 
 -- ============================================================
---  MAKE SECTION
+--  MAKE SECTION (FIXED - properly sizes and prevents overflow)
 -- ============================================================
 local function makeSection(column, name)
     local hasHeader = name ~= nil and name ~= ""
     local headerH = hasHeader and (isMobile and 35 or 40) or (isMobile and 4 or 6)
 
     local box = Instance.new("Frame")
-    box.Size = UDim2.new(1, 0, 0, headerH + (isMobile and 15 or 20))
+    box.Size = UDim2.new(1, 0, 0, headerH + (isMobile and 20 or 25))
     box.BackgroundColor3 = THEME.Border
     box.BorderSizePixel = 0
     box.Parent = column
@@ -793,6 +813,7 @@ local function makeSection(column, name)
         hdr.TextSize = isMobile and 12 or 13
         hdr.Font = Enum.Font.GothamBold
         hdr.TextXAlignment = Enum.TextXAlignment.Left
+        hdr.TextWrapped = true  -- Enable wrapping for section headers too
         hdr.Parent = bg
     end
 
@@ -802,16 +823,43 @@ local function makeSection(column, name)
     inner.Position = UDim2.new(0, 15, 0, headerH + (isMobile and 4 or 5))
     inner.BackgroundTransparency = 1
     inner.Parent = bg
+    
+    -- Use a UIListLayout with proper spacing
     local il = Instance.new("UIListLayout", inner)
     il.SortOrder = Enum.SortOrder.LayoutOrder
-    il.Padding = UDim.new(0, isMobile and 8 or 12)
+    il.Padding = UDim.new(0, isMobile and 6 or 10)  -- Slightly reduced padding for better fit
 
+    -- Function to resize the box based on content
     local function resize()
         local h = il.AbsoluteContentSize.Y
+        local padding = isMobile and 16 or 20
+        local minHeight = headerH + (isMobile and 6 or 8) + padding
+        
+        -- If content height is 0 (empty section), use minimum height
+        if h == 0 then
+            inner.Size = UDim2.new(1, -30, 0, isMobile and 4 or 6)
+            box.Size = UDim2.new(1, 0, 0, minHeight)
+            return
+        end
+        
         inner.Size = UDim2.new(1, -30, 0, h)
-        box.Size = UDim2.new(1, 0, 0, headerH + (isMobile and 4 or 5) + h + (isMobile and 12 or 15))
+        box.Size = UDim2.new(1, 0, 0, headerH + (isMobile and 4 or 5) + h + (isMobile and 14 or 18))
     end
+    
+    -- Connect resize to both content size changes and when children are added/removed
     il:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(resize)
+    
+    -- Also resize when children are added/removed
+    local function onChildChange()
+        task.wait()  -- Allow the UIListLayout to update
+        resize()
+    end
+    
+    inner.ChildAdded:Connect(onChildChange)
+    inner.ChildRemoved:Connect(onChildChange)
+    
+    -- Initial resize after a small delay
+    task.wait(0.05)
     resize()
 
     return inner
@@ -877,7 +925,7 @@ function ElementMethods:CreateDropdown(cfg)
         if flag then PreviewLibary.Flags[flag] = opt end
         if cfg.Callback then cfg.Callback(opt) end
     end)
-    
+
     return {
         Refresh = function(self, newOptions) end,
         SetValue = function(self, value)
@@ -960,14 +1008,14 @@ function WindowMethods:CreateTab(name, icon)
 
     local content = Instance.new("Frame")
     content.Name = "Content"
-    content.Size = UDim2.new(1, 0, 1, -(isMobile and 35 or 40))
-    content.Position = UDim2.new(0, 0, 0, isMobile and 35 or 40)
+    content.Size = UDim2.new(1, -10, 1, -(isMobile and 35 or 40))  -- Added small padding
+    content.Position = UDim2.new(0, 5, 0, isMobile and 35 or 40)   -- Centered with padding
     content.BackgroundTransparency = 1
     content.Parent = container
 
     local function makeColumn(xScale, xOff)
         local sf = Instance.new("ScrollingFrame")
-        sf.Size = UDim2.new(0.5, -(isMobile and 4 or 8), 1, 0)
+        sf.Size = UDim2.new(0.5, -(isMobile and 6 or 10), 1, 0)  -- Added more gap
         sf.Position = UDim2.new(xScale, xOff, 0, 0)
         sf.BackgroundTransparency = 1
         sf.BorderSizePixel = 0
@@ -986,7 +1034,7 @@ function WindowMethods:CreateTab(name, icon)
         _id = id,
         Container = container,
         Left = makeColumn(0, 0),
-        Right = makeColumn(0.5, isMobile and 4 or 8),
+        Right = makeColumn(0.5, isMobile and 6 or 10),
         _colToggle = false,
         _default = nil,
     }, { __index = TabMethods })
