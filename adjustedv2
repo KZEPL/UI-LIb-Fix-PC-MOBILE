@@ -43,7 +43,6 @@ local THEME = {
 
 local function applyThemeColor(color)
 	THEME.Scheme = color
-	-- Update all existing UI elements
 	for _, gui in ipairs(playerGui:GetDescendants()) do
 		if gui:IsA("Frame") and gui.Name == "line" then
 			gui.BackgroundColor3 = color
@@ -57,6 +56,7 @@ local function applyThemeColor(color)
 			end
 		end
 	end
+	THEME.Scheme = color
 end
 
 local CustomFontAsset = nil
@@ -140,8 +140,9 @@ SettingsGui.ResetOnSpawn = false
 SettingsGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 SettingsGui.Parent = playerGui
 
-local UI_WIDTH = isMobile and 450 or 650
-local UI_HEIGHT = isMobile and 350 or 480
+-- FIX: Mobile now uses PC size to fix the "too small" issue
+local UI_WIDTH = 650 
+local UI_HEIGHT = 480 
 local NAV_WIDTH = 50
 local NAV_EXPANDED = 150
 
@@ -209,9 +210,10 @@ Instance.new("UICorner", settingsBtn).CornerRadius = UDim.new(0, 4)
 -- ============================================================
 --  SETTINGS PANEL (Transparency & Theme Color)
 -- ============================================================
+-- FIX: Increased size and made it a proper container for the larger color picker
 local settingsPanel = Instance.new("Frame")
-settingsPanel.Size = UDim2.new(0, 200, 0, 120) -- Increased height for color picker
-settingsPanel.Position = UDim2.new(1, -210, 0, 36)
+settingsPanel.Size = UDim2.new(0, 220, 0, 220) 
+settingsPanel.Position = UDim2.new(1, -230, 0, 36)
 settingsPanel.BackgroundColor3 = THEME.PopupBg
 settingsPanel.BorderSizePixel = 0
 settingsPanel.ZIndex = 200
@@ -221,22 +223,21 @@ Instance.new("UICorner", settingsPanel).CornerRadius = UDim.new(0, 4)
 local spStroke = Instance.new("UIStroke", settingsPanel)
 spStroke.Color = THEME.Border; spStroke.Thickness = 1
 
--- Transparency Section
 local transLabel = Instance.new("TextLabel")
 transLabel.Size = UDim2.new(1, -16, 0, 20)
-transLabel.Position = UDim2.new(0, 8, 0, 4)
+transLabel.Position = UDim2.new(0, 8, 0, 8)
 transLabel.BackgroundTransparency = 1
 transLabel.Text = "Window Transparency"
 transLabel.TextColor3 = THEME.Text
-transLabel.TextSize = 12
+transLabel.TextSize = 14
 ApplyFont(transLabel, "label")
 transLabel.TextXAlignment = Enum.TextXAlignment.Left
 transLabel.ZIndex = 201
 transLabel.Parent = settingsPanel
 
 local transBar = Instance.new("TextButton")
-transBar.Size = UDim2.new(1, -16, 0, 6)
-transBar.Position = UDim2.new(0, 8, 0, 30)
+transBar.Size = UDim2.new(1, -16, 0, 8)
+transBar.Position = UDim2.new(0, 8, 0, 32)
 transBar.BackgroundColor3 = THEME.FrameBg
 transBar.BorderSizePixel = 0
 transBar.Text = ""
@@ -253,7 +254,7 @@ transFill.Parent = transBar
 Instance.new("UICorner", transFill).CornerRadius = UDim.new(0, 3)
 
 local transKnob = Instance.new("Frame")
-transKnob.Size = UDim2.new(0, 12, 0, 12)
+transKnob.Size = UDim2.new(0, 14, 0, 14)
 transKnob.AnchorPoint = Vector2.new(0.5, 0.5)
 transKnob.Position = UDim2.new(0, 0, 0.5, 0)
 transKnob.BackgroundColor3 = THEME.SliderGrab
@@ -299,23 +300,21 @@ UserInputService.InputChanged:Connect(function(i)
 	end
 end)
 
--- Theme Color Section
 local colorLabel = Instance.new("TextLabel")
 colorLabel.Size = UDim2.new(0.6, 0, 0, 20)
-colorLabel.Position = UDim2.new(0, 8, 0, 46)
+colorLabel.Position = UDim2.new(0, 8, 0, 56)
 colorLabel.BackgroundTransparency = 1
 colorLabel.Text = "Menu Theme Color"
 colorLabel.TextColor3 = THEME.Text
-colorLabel.TextSize = 12
+colorLabel.TextSize = 14
 ApplyFont(colorLabel, "label")
 colorLabel.TextXAlignment = Enum.TextXAlignment.Left
 colorLabel.ZIndex = 201
 colorLabel.Parent = settingsPanel
 
 local colorPreview = Instance.new("TextButton")
-colorPreview.Size = UDim2.new(0, 28, 0, 14)
-colorPreview.Position = UDim2.new(1, -36, 0.5, 0)
-colorPreview.Position = UDim2.new(1, -36, 0, 53)
+colorPreview.Size = UDim2.new(0, 28, 0, 16)
+colorPreview.Position = UDim2.new(1, -36, 0, 58)
 colorPreview.BackgroundColor3 = THEME.Scheme
 colorPreview.BorderSizePixel = 0
 colorPreview.Text = ""
@@ -323,16 +322,16 @@ colorPreview.ZIndex = 201
 colorPreview.Parent = settingsPanel
 Instance.new("UICorner", colorPreview).CornerRadius = UDim.new(0, 2)
 
--- Full Color Picker (Inside Settings Panel)
+-- FIX: Made color picker significantly larger and easier to click
 local pickerFrame = Instance.new("Frame")
-pickerFrame.Size = UDim2.new(1, -16, 0, 50)
-pickerFrame.Position = UDim2.new(0, 8, 0, 70)
+pickerFrame.Size = UDim2.new(1, -16, 0, 120)
+pickerFrame.Position = UDim2.new(0, 8, 0, 84)
 pickerFrame.BackgroundTransparency = 1
 pickerFrame.ZIndex = 201
 pickerFrame.Parent = settingsPanel
 
 local svBg = Instance.new("ImageLabel")
-svBg.Size = UDim2.new(1, -20, 0, 40)
+svBg.Size = UDim2.new(1, -24, 1, 0)
 svBg.Position = UDim2.new(0, 0, 0, 0)
 svBg.BorderSizePixel = 0
 svBg.ZIndex = 202
@@ -348,7 +347,7 @@ svDark.ZIndex = 203
 svDark.Parent = svBg
 
 local cursor = Instance.new("Frame")
-cursor.Size = UDim2.new(0, 6, 0, 6)
+cursor.Size = UDim2.new(0, 10, 0, 10)
 cursor.AnchorPoint = Vector2.new(0.5, 0.5)
 cursor.Position = UDim2.new(1, 0, 0, 0)
 cursor.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -356,9 +355,10 @@ cursor.BorderSizePixel = 0
 cursor.ZIndex = 204
 cursor.Parent = svBg
 Instance.new("UICorner", cursor).CornerRadius = UDim.new(1, 0)
+local cs1 = Instance.new("UIStroke", cursor); cs1.Color = Color3.new(0,0,0); cs1.Thickness = 1
 
 local hueBar = Instance.new("ImageLabel")
-hueBar.Size = UDim2.new(0, 14, 0, 40)
+hueBar.Size = UDim2.new(0, 16, 1, 0)
 hueBar.Position = UDim2.new(1, -16, 0, 0)
 hueBar.Image = "rbxassetid://698052001"
 hueBar.BorderSizePixel = 0
@@ -1554,9 +1554,6 @@ local function makeSection(column, name)
 	return inner
 end
 
--- ============================================================
---  PREVIEWLIBARY API & CONFIG SAVE/LOAD
--- ============================================================
 local PreviewLibary = {}
 PreviewLibary.Flags = {}
 PreviewLibary.Release = Release
