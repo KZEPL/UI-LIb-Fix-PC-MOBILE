@@ -1,6 +1,4 @@
---- ADJUST FOR MOBILE & PC SUPPORT
-
-local Release = "Release 1.5 - Mobile & Settings Update"
+local Release = "Release 1.6 - Theme Color Update"
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -42,6 +40,24 @@ local THEME = {
 	SliderGrab = Color3.fromRGB(255, 255, 255),
 	MID = Color3.fromRGB(20, 40, 48)
 }
+
+local function applyThemeColor(color)
+	THEME.Scheme = color
+	-- Update all existing UI elements
+	for _, gui in ipairs(playerGui:GetDescendants()) do
+		if gui:IsA("Frame") and gui.Name == "line" then
+			gui.BackgroundColor3 = color
+		elseif gui:IsA("TextLabel") then
+			if gui.TextColor3 == THEME.Scheme then
+				gui.TextColor3 = color
+			end
+		elseif gui:IsA("TextButton") then
+			if gui.TextColor3 == THEME.Scheme then
+				gui.TextColor3 = color
+			end
+		end
+	end
+end
 
 local CustomFontAsset = nil
 pcall(function()
@@ -124,7 +140,6 @@ SettingsGui.ResetOnSpawn = false
 SettingsGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 SettingsGui.Parent = playerGui
 
--- Mobile vs PC Sizing
 local UI_WIDTH = isMobile and 450 or 650
 local UI_HEIGHT = isMobile and 350 or 480
 local NAV_WIDTH = 50
@@ -143,9 +158,6 @@ Instance.new("UICorner", MainWindow).CornerRadius = UDim.new(0, 6)
 local mwStroke = Instance.new("UIStroke", MainWindow)
 mwStroke.Color = THEME.Border; mwStroke.Thickness = 1
 
--- ============================================================
---  WINDOW TITLE
--- ============================================================
 local windowTitle = Instance.new("TextLabel")
 windowTitle.Size = UDim2.new(0, 200, 0, 24)
 windowTitle.Position = UDim2.new(0, 12, 0, 4)
@@ -158,9 +170,6 @@ windowTitle.TextXAlignment = Enum.TextXAlignment.Left
 windowTitle.ZIndex = 100
 windowTitle.Parent = MainWindow
 
--- ============================================================
---  TOP BAR BUTTONS (Close, Minimize, Settings)
--- ============================================================
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 24, 0, 24)
 closeBtn.Position = UDim2.new(1, -32, 0, 6)
@@ -198,10 +207,10 @@ settingsBtn.Parent = MainWindow
 Instance.new("UICorner", settingsBtn).CornerRadius = UDim.new(0, 4)
 
 -- ============================================================
---  SETTINGS PANEL (Transparency Slider)
+--  SETTINGS PANEL (Transparency & Theme Color)
 -- ============================================================
 local settingsPanel = Instance.new("Frame")
-settingsPanel.Size = UDim2.new(0, 200, 0, 60)
+settingsPanel.Size = UDim2.new(0, 200, 0, 120) -- Increased height for color picker
 settingsPanel.Position = UDim2.new(1, -210, 0, 36)
 settingsPanel.BackgroundColor3 = THEME.PopupBg
 settingsPanel.BorderSizePixel = 0
@@ -212,6 +221,7 @@ Instance.new("UICorner", settingsPanel).CornerRadius = UDim.new(0, 4)
 local spStroke = Instance.new("UIStroke", settingsPanel)
 spStroke.Color = THEME.Border; spStroke.Thickness = 1
 
+-- Transparency Section
 local transLabel = Instance.new("TextLabel")
 transLabel.Size = UDim2.new(1, -16, 0, 20)
 transLabel.Position = UDim2.new(0, 8, 0, 4)
@@ -289,6 +299,121 @@ UserInputService.InputChanged:Connect(function(i)
 	end
 end)
 
+-- Theme Color Section
+local colorLabel = Instance.new("TextLabel")
+colorLabel.Size = UDim2.new(0.6, 0, 0, 20)
+colorLabel.Position = UDim2.new(0, 8, 0, 46)
+colorLabel.BackgroundTransparency = 1
+colorLabel.Text = "Menu Theme Color"
+colorLabel.TextColor3 = THEME.Text
+colorLabel.TextSize = 12
+ApplyFont(colorLabel, "label")
+colorLabel.TextXAlignment = Enum.TextXAlignment.Left
+colorLabel.ZIndex = 201
+colorLabel.Parent = settingsPanel
+
+local colorPreview = Instance.new("TextButton")
+colorPreview.Size = UDim2.new(0, 28, 0, 14)
+colorPreview.Position = UDim2.new(1, -36, 0.5, 0)
+colorPreview.Position = UDim2.new(1, -36, 0, 53)
+colorPreview.BackgroundColor3 = THEME.Scheme
+colorPreview.BorderSizePixel = 0
+colorPreview.Text = ""
+colorPreview.ZIndex = 201
+colorPreview.Parent = settingsPanel
+Instance.new("UICorner", colorPreview).CornerRadius = UDim.new(0, 2)
+
+-- Full Color Picker (Inside Settings Panel)
+local pickerFrame = Instance.new("Frame")
+pickerFrame.Size = UDim2.new(1, -16, 0, 50)
+pickerFrame.Position = UDim2.new(0, 8, 0, 70)
+pickerFrame.BackgroundTransparency = 1
+pickerFrame.ZIndex = 201
+pickerFrame.Parent = settingsPanel
+
+local svBg = Instance.new("ImageLabel")
+svBg.Size = UDim2.new(1, -20, 0, 40)
+svBg.Position = UDim2.new(0, 0, 0, 0)
+svBg.BorderSizePixel = 0
+svBg.ZIndex = 202
+svBg.Image = "rbxassetid://4155801252"
+svBg.ImageColor3 = hsvToRgb(0, 1, 1)
+svBg.Parent = pickerFrame
+
+local svDark = Instance.new("ImageLabel")
+svDark.Size = UDim2.new(1, 0, 1, 0)
+svDark.BackgroundTransparency = 1
+svDark.Image = "rbxassetid://1417380948"
+svDark.ZIndex = 203
+svDark.Parent = svBg
+
+local cursor = Instance.new("Frame")
+cursor.Size = UDim2.new(0, 6, 0, 6)
+cursor.AnchorPoint = Vector2.new(0.5, 0.5)
+cursor.Position = UDim2.new(1, 0, 0, 0)
+cursor.BackgroundColor3 = Color3.new(1, 1, 1)
+cursor.BorderSizePixel = 0
+cursor.ZIndex = 204
+cursor.Parent = svBg
+Instance.new("UICorner", cursor).CornerRadius = UDim.new(1, 0)
+
+local hueBar = Instance.new("ImageLabel")
+hueBar.Size = UDim2.new(0, 14, 0, 40)
+hueBar.Position = UDim2.new(1, -16, 0, 0)
+hueBar.Image = "rbxassetid://698052001"
+hueBar.BorderSizePixel = 0
+hueBar.ZIndex = 202
+hueBar.Parent = pickerFrame
+Instance.new("UICorner", hueBar).CornerRadius = UDim.new(0, 2)
+
+local h, s, v = rgbToHsv(THEME.Scheme)
+
+local function refreshColor()
+	local c = hsvToRgb(h, s, v)
+	colorPreview.BackgroundColor3 = c
+	svBg.ImageColor3 = hsvToRgb(h, 1, 1)
+	cursor.Position = UDim2.new(1 - s, 0, 1 - v, 0)
+	applyThemeColor(c)
+end
+
+local svDragging = false
+svBg.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+		svDragging = true
+		local dx = math.clamp((i.Position.X - svBg.AbsolutePosition.X) / svBg.AbsoluteSize.X, 0, 1)
+		local dy = math.clamp((i.Position.Y - svBg.AbsolutePosition.Y) / svBg.AbsoluteSize.Y, 0, 1)
+		s = 1 - dx; v = 1 - dy; refreshColor()
+	end
+end)
+
+local hueDragging = false
+hueBar.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+		hueDragging = true
+		h = math.clamp((i.Position.Y - hueBar.AbsolutePosition.Y) / hueBar.AbsoluteSize.Y, 0, 1)
+		refreshColor()
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+		svDragging = false; hueDragging = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+		if svDragging then
+			local dx = math.clamp((i.Position.X - svBg.AbsolutePosition.X) / svBg.AbsoluteSize.X, 0, 1)
+			local dy = math.clamp((i.Position.Y - svBg.AbsolutePosition.Y) / svBg.AbsoluteSize.Y, 0, 1)
+			s = 1 - dx; v = 1 - dy; refreshColor()
+		elseif hueDragging then
+			h = math.clamp((i.Position.Y - hueBar.AbsolutePosition.Y) / hueBar.AbsoluteSize.Y, 0, 1)
+			refreshColor()
+		end
+	end
+end)
+
 settingsBtn.MouseButton1Click:Connect(function()
 	settingsPanel.Visible = not settingsPanel.Visible
 end)
@@ -344,7 +469,7 @@ openButton.Size = UDim2.new(0, 40, 0, 40)
 openButton.Position = UDim2.new(0.02, 0, 0.02, 0)
 openButton.BackgroundColor3 = THEME.ChildBg
 openButton.BorderSizePixel = 0
-openButton.Image = "rbxassetid://109578957492871"
+openButton.Image = ICONS.misc
 openButton.BackgroundTransparency = 0.2
 openButton.Visible = false
 openButton.Parent = SettingsGui
