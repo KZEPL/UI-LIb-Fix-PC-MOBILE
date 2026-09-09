@@ -1,4 +1,4 @@
--- Main UI lib (PC Only - Fixed Window & Tabs)
+-- Main UI lib I'll try to adjust the size for mobile.
 
 local Release = "Release 1"
 
