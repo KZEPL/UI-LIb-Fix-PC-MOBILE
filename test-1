@@ -1,6 +1,7 @@
 -- language: Luau, file: library.lua, target: Roblox CoreGui
 -- cleaned rebuild of the Vex X Kyzen UI library
--- fixes: label sizing, Close/Destroy visibility, OpenBtn recovery, LeftAlt toggle, drag persistence
+-- fix: TextButton has no Image/ImageColor3/ScaleType. slice() now only targets ImageLabels.
+--      buttons get an ImageLabel backing sized 1:1.
 
 local library = {}
 library.Name = "Vex X Kyzen ui"
@@ -18,7 +19,6 @@ local function play(id)
     s:Play()
 end
 
--- theme table: theme1 = top/tabs/items, theme2 = main bodies, theme3 = accent
 local Themes = {
     Normal    = { Color3.fromRGB(32,32,32),  Color3.fromRGB(26,26,26),  Color3.fromRGB(176,148,255), false },
     Reverse   = { Color3.fromRGB(26,26,26),  Color3.fromRGB(32,32,32),  Color3.fromRGB(176,148,255), false },
@@ -32,13 +32,28 @@ local Themes = {
 
 local ROUND_IMG = "rbxassetid://3570695787"
 
+-- slice(): only applies Image properties to ImageLabels. guards against misuse.
 local function slice(img, color, scale)
+    if not img:IsA("ImageLabel") then return end
     img.Image = ROUND_IMG
     img.ImageColor3 = color
     img.ScaleType = Enum.ScaleType.Slice
     img.SliceCenter = Rect.new(100,100,100,100)
     img.SliceScale = scale or 0.03
     img.BackgroundTransparency = 1
+end
+
+-- backing(): gives a TextButton a rounded slice look without touching its own props
+local function backing(btn, color, scale, z)
+    local back = Instance.new("ImageLabel")
+    back.Name = "Backing"
+    back.Parent = btn
+    back.AnchorPoint = Vector2.new(0.5, 0.5)
+    back.Position = UDim2.new(0.5, 0, 0.5, 0)
+    back.Size = UDim2.new(1, 0, 1, 0)
+    back.ZIndex = z or (btn.ZIndex - 1)
+    slice(back, color, scale)
+    return back
 end
 
 function library:CreateWindow(name, theme)
@@ -78,7 +93,6 @@ function library:CreateWindow(name, theme)
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.ZIndex = 2
 
-    -- controls container (right-aligned, no more clipping)
     local Controls = Instance.new("Frame")
     Controls.Name = "Controls"
     Controls.Parent = Top
@@ -144,7 +158,7 @@ function library:CreateWindow(name, theme)
     slice(Items, theme1, 0.02)
 
     -- ===== FLOATING OPEN BUTTON =====
-    -- anchored top-left, draggable, visible only when window closed
+    -- TextButton has no Image. Wrap in an ImageLabel backing.
     local OpenBtn = Instance.new("TextButton")
     OpenBtn.Name = "OpenBtn"
     OpenBtn.Parent = Screen
@@ -154,12 +168,13 @@ function library:CreateWindow(name, theme)
     OpenBtn.Font = Enum.Font.SourceSansBold
     OpenBtn.TextColor3 = Color3.fromRGB(255,255,255)
     OpenBtn.TextSize = 14
+    OpenBtn.BackgroundTransparency = 1
     OpenBtn.AutoButtonColor = false
     OpenBtn.Visible = false
     OpenBtn.Active = true
     OpenBtn.Draggable = true
     OpenBtn.ZIndex = 5
-    slice(OpenBtn, theme1, 0.03)
+    backing(OpenBtn, theme1, 0.03, 4)
 
     -- ===== OPEN / CLOSE / DESTROY =====
     local isOpen = true
@@ -187,7 +202,6 @@ function library:CreateWindow(name, theme)
     DestroyBtn.MouseButton1Click:Connect(destroyUI)
     OpenBtn.MouseButton1Click:Connect(openUI)
 
-    -- LeftAlt toggles open/close, ignored while typing in chat
     local conn
     conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
@@ -235,7 +249,6 @@ function library:CreateWindow(name, theme)
         Grid.CellPadding = UDim2.new(0, 0, 0, 4)
         Grid.StartCorner = Enum.StartCorner.TopLeft
 
-        -- helper: pad every child so labels never clip
         local function padRow(row)
             row.Size = UDim2.new(1, -6, 0, 26)
             local pad = Instance.new("UIPadding")
@@ -295,7 +308,7 @@ function library:CreateWindow(name, theme)
             ArrowBtn.TextColor3 = Color3.fromRGB(255,255,255)
             ArrowBtn.TextSize = 14
             ArrowBtn.AutoButtonColor = false
-            slice(ArrowBtn, theme2, 0.02)
+            backing(ArrowBtn, theme2, 0.02)
 
             local DropContainer = Instance.new("ImageLabel")
             DropContainer.Parent = Row
@@ -554,12 +567,13 @@ function library:CreateWindow(name, theme)
             Btn.Parent = Row
             Btn.Size = UDim2.new(1, -6, 1, -4)
             Btn.Position = UDim2.new(0, 3, 0, 2)
+            Btn.BackgroundTransparency = 1
             Btn.Font = Enum.Font.SourceSansSemibold
             Btn.Text = text
             Btn.TextColor3 = Color3.fromRGB(255,255,255)
             Btn.TextSize = 14
             Btn.AutoButtonColor = false
-            slice(Btn, theme2, 0.03)
+            backing(Btn, theme2, 0.03)
 
             Btn.MouseButton1Click:Connect(function()
                 pcall(callback)
