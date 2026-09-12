@@ -1,7 +1,3 @@
--- language: Luau, file: library.lua, target: Roblox CoreGui
--- fix: bar drag now wired to Top, Title, and Controls frame (empty regions)
---      so any pixel on the bar that isn't a button starts a drag.
-
 local library = {}
 library.Name = "Vex X Kyzen ui"
 
@@ -53,8 +49,6 @@ local function backing(btn, color, scale, z)
     return back
 end
 
--- makeDrag(): wires drag on any GuiObject. multiple objects can share one target.
--- listenOn = object that receives InputBegan; target = object whose Position is moved.
 local function makeDrag(listenOn, target)
     target = target or listenOn
     local dragging, dragStart, startPos = false, nil, nil
@@ -67,7 +61,6 @@ local function makeDrag(listenOn, target)
             startPos = target.Position
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if not dragging then return end
         if input.UserInputType == Enum.UserInputType.MouseMovement
@@ -79,7 +72,6 @@ local function makeDrag(listenOn, target)
             )
         end
     end)
-
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
@@ -103,7 +95,6 @@ function library:CreateWindow(name, theme)
     Screen.IgnoreGuiInset = true
     Screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    -- ===== TOP BAR =====
     local Top = Instance.new("ImageLabel")
     Top.Name = "Top"
     Top.Parent = Screen
@@ -161,12 +152,10 @@ function library:CreateWindow(name, theme)
     DestroyBtn.AutoButtonColor = false
     DestroyBtn.ZIndex = 5
 
-    -- wire drag on Top, Title, and Controls (empty frame area). buttons above them still click.
     makeDrag(Top, Top)
     makeDrag(Title, Top)
     makeDrag(Controls, Top)
 
-    -- ===== MAIN BODY =====
     local Main = Instance.new("ImageLabel")
     Main.Name = "Main"
     Main.Parent = Top
@@ -196,7 +185,6 @@ function library:CreateWindow(name, theme)
     Items.Size = UDim2.new(1, -148, 1, -20)
     slice(Items, theme1, 0.02)
 
-    -- ===== FLOATING OPEN BUTTON =====
     local OpenBtn = Instance.new("TextButton")
     OpenBtn.Name = "OpenBtn"
     OpenBtn.Parent = Screen
@@ -215,7 +203,6 @@ function library:CreateWindow(name, theme)
 
     makeDrag(OpenBtn, OpenBtn)
 
-    -- ===== OPEN / CLOSE / DESTROY =====
     local isOpen = true
     local isDestroyed = false
 
@@ -240,7 +227,6 @@ function library:CreateWindow(name, theme)
     CloseBtn.MouseButton1Click:Connect(closeUI)
     DestroyBtn.MouseButton1Click:Connect(destroyUI)
 
-    -- Open button click vs drag threshold.
     local openDownPos = nil
     OpenBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -302,12 +288,12 @@ function library:CreateWindow(name, theme)
         Grid.Parent = Frame
         Grid.FillDirection = Enum.FillDirection.Vertical
         Grid.SortOrder = Enum.SortOrder.LayoutOrder
-        Grid.CellSize = UDim2.new(1, -6, 0, 26)
-        Grid.CellPadding = UDim2.new(0, 0, 0, 4)
+        Grid.CellSize = UDim2.new(1, -6, 0, 28)   -- taller so button fill isn't squeezed
+        Grid.CellPadding = UDim2.new(0, 0, 0, 6)
         Grid.StartCorner = Enum.StartCorner.TopLeft
 
         local function padRow(row)
-            row.Size = UDim2.new(1, -6, 0, 26)
+            row.Size = UDim2.new(1, -6, 0, 28)
             local pad = Instance.new("UIPadding")
             pad.Parent = row
             pad.PaddingLeft = UDim.new(0, 6)
@@ -364,7 +350,8 @@ function library:CreateWindow(name, theme)
             ArrowBtn.TextColor3 = Color3.fromRGB(255,255,255)
             ArrowBtn.TextSize = 14
             ArrowBtn.AutoButtonColor = false
-            backing(ArrowBtn, theme2, 0.02)
+            ArrowBtn.ZIndex = 3
+            backing(ArrowBtn, theme2, 0.02, 2)
 
             local DropContainer = Instance.new("ImageLabel")
             DropContainer.Parent = Row
@@ -605,6 +592,7 @@ function library:CreateWindow(name, theme)
             end)
         end
 
+        -- BUTTON — visible text, full-size backing, no clipping
         function InsideTab:CreateButton(text, callback)
             text = text or "New Button"
             callback = callback or function() end
@@ -617,15 +605,18 @@ function library:CreateWindow(name, theme)
 
             local Btn = Instance.new("TextButton")
             Btn.Parent = Row
-            Btn.Size = UDim2.new(1, -6, 1, -4)
-            Btn.Position = UDim2.new(0, 3, 0, 2)
+            Btn.Size = UDim2.new(1, -12, 1, -6)     -- inset so backing corners stay visible
+            Btn.Position = UDim2.new(0, 6, 0, 3)
             Btn.BackgroundTransparency = 1
             Btn.Font = Enum.Font.SourceSansSemibold
             Btn.Text = text
-            Btn.TextColor3 = Color3.fromRGB(0, 255, 255)
+            Btn.TextColor3 = Color3.fromRGB(255,255,255)  -- white, readable on every theme2
             Btn.TextSize = 14
+            Btn.TextXAlignment = Enum.TextXAlignment.Center
+            Btn.TextYAlignment = Enum.TextYAlignment.Center
             Btn.AutoButtonColor = false
-            backing(Btn, theme2, 0.03)
+            Btn.ZIndex = 2                              -- text on top of backing
+            backing(Btn, theme2, 0.03, 1)               -- backing at ZIndex 1, under the text
 
             Btn.MouseButton1Click:Connect(function()
                 pcall(callback)
