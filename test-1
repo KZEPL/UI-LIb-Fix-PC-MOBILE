@@ -50,10 +50,12 @@ function library:CreateWindow(name, theme)
     end
     print("Theme selected: " .. theme)
 
+    local UserInputService = game:GetService("UserInputService")
+
     -- Instances
     local Screen = Instance.new("ScreenGui")
     local Top = Instance.new("ImageLabel")
-    local Toggle = Instance.new("TextButton") -- Changed to TextButton for "vex" text
+    local Toggle = Instance.new("TextButton") 
     local Main = Instance.new("ImageLabel")
     local Tabs = Instance.new("ImageLabel")
     local UIGridLayout = Instance.new("UIGridLayout")
@@ -61,10 +63,13 @@ function library:CreateWindow(name, theme)
     local Items = Instance.new("ImageLabel")
     local TextLabel = Instance.new("TextLabel")
     
-    -- New Window Control Buttons
+    -- Window Control Buttons
     local ControlContainer = Instance.new("Frame")
     local CloseBtn = Instance.new("TextButton")
     local DestroyBtn = Instance.new("TextButton")
+
+    -- Floating Open Button (Visible when closed)
+    local OpenBtn = Instance.new("TextButton")
 
     -- Properties
     Screen.Name = self.Name
@@ -180,38 +185,75 @@ function library:CreateWindow(name, theme)
     Items.SliceCenter = Rect.new(100, 100, 100, 100)
     Items.SliceScale = 0.020
 
+    -- Floating Open Button (Visible when UI is closed)
+    OpenBtn.Name = "OpenBtn"
+    OpenBtn.Parent = Screen
+    OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    OpenBtn.BackgroundTransparency = 1.000
+    OpenBtn.Position = UDim2.new(0, 15, 0, 15) -- Top Left corner
+    OpenBtn.Size = UDim2.new(0, 60, 0, 25)
+    OpenBtn.Visible = false
+    OpenBtn.Font = Enum.Font.SourceSansBold
+    OpenBtn.Text = "Open"
+    OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    OpenBtn.TextSize = 14.000
+    OpenBtn.Image = "rbxassetid://3570695787"
+    OpenBtn.ImageColor3 = theme1
+    OpenBtn.ScaleType = Enum.ScaleType.Slice
+    OpenBtn.SliceCenter = Rect.new(100, 100, 100, 100)
+    OpenBtn.SliceScale = 0.030
+    OpenBtn.Active = true
+    OpenBtn.Draggable = true
+
     -- Window Logic (Open/Close/Destroy)
-    local opened = true
+    local isOpen = true
     
-    local function toggleUI()
-        if opened then
-            Main.Visible = false
-            Toggle.TextColor3 = Color3.fromRGB(150, 150, 150)
-            opened = false
-        else
+    local function openUI()
+        if not isOpen then
+            isOpen = true
+            Top.Visible = true
             Main.Visible = true
+            OpenBtn.Visible = false
             Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-            opened = true
+            play("rbxassetid://1412830636")
         end
     end
 
-    Toggle.MouseButton1Click:Connect(function()
-        play("rbxassetid://1412830636")
-        toggleUI()
-    end)
+    local function closeUI()
+        if isOpen then
+            isOpen = false
+            Top.Visible = false
+            Main.Visible = false
+            OpenBtn.Visible = true
+            play("rbxassetid://1412830636")
+        end
+    end
 
-    CloseBtn.MouseButton1Click:Connect(function()
-        play("rbxassetid://1412830636")
-        -- Hides the UI completely
-        Top.Visible = false
-        Main.Visible = false
-        opened = false
-    end)
-
-    DestroyBtn.MouseButton1Click:Connect(function()
+    local function destroyUI()
         play("rbxassetid://178104975")
         -- Completely deletes the GUI from memory/CoreGui
         Screen:Destroy()
+        -- Any variables pointing to 'Screen' or its children are now nil
+    end
+
+    -- Button Connections
+    Toggle.MouseButton1Click:Connect(closeUI)
+    CloseBtn.MouseButton1Click:Connect(closeUI)
+    OpenBtn.MouseButton1Click:Connect(openUI)
+    DestroyBtn.MouseButton1Click:Connect(destroyUI)
+
+    -- Keybind Logic (Left Alt)
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        -- Don't trigger if the user is typing in chat
+        if gameProcessed then return end
+        
+        if input.KeyCode == Enum.KeyCode.LeftAlt then
+            if isOpen then
+                closeUI()
+            else
+                openUI()
+            end
+        end
     end)
 
     local InsideLibrary = {}
