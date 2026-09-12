@@ -1,7 +1,3 @@
--- language: Luau, file: library.lua, target: Roblox CoreGui
--- cleaned rebuild of the Vex X Kyzen UI library
--- fix: TextButton has no Image/ImageColor3/ScaleType. slice() now only targets ImageLabels.
---      buttons get an ImageLabel backing sized 1:1.
 
 local library = {}
 library.Name = "Vex X Kyzen ui"
@@ -32,7 +28,6 @@ local Themes = {
 
 local ROUND_IMG = "rbxassetid://3570695787"
 
--- slice(): only applies Image properties to ImageLabels. guards against misuse.
 local function slice(img, color, scale)
     if not img:IsA("ImageLabel") then return end
     img.Image = ROUND_IMG
@@ -43,7 +38,6 @@ local function slice(img, color, scale)
     img.BackgroundTransparency = 1
 end
 
--- backing(): gives a TextButton a rounded slice look without touching its own props
 local function backing(btn, color, scale, z)
     local back = Instance.new("ImageLabel")
     back.Name = "Backing"
@@ -54,6 +48,48 @@ local function backing(btn, color, scale, z)
     back.ZIndex = z or (btn.ZIndex - 1)
     slice(back, color, scale)
     return back
+end
+
+-- makeDrag(): wires manual click-drag on a Frame/ImageLabel/TextButton.
+-- moves the frame's Position (AnchorPoint-aware) and returns a disconnect fn.
+local function makeDrag(frame, onStart, onEnd)
+    local dragging, dragStart, startPos = false, nil, nil
+
+    local beganConn = frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            if onStart then onStart() end
+        end
+    end)
+
+    local changedConn = UserInputService.InputChanged:Connect(function(input)
+        if not dragging then return end
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    local endedConn = UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            if onEnd then onEnd() end
+        end
+    end)
+
+    return function()
+        beganConn:Disconnect()
+        changedConn:Disconnect()
+        endedConn:Disconnect()
+    end
 end
 
 function library:CreateWindow(name, theme)
@@ -100,6 +136,7 @@ function library:CreateWindow(name, theme)
     Controls.AnchorPoint = Vector2.new(1, 0.5)
     Controls.Position = UDim2.new(1, -8, 0.5, 0)
     Controls.Size = UDim2.new(0, 130, 0, 22)
+    Controls.ZIndex = 3
 
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Name = "Close"
@@ -112,7 +149,7 @@ function library:CreateWindow(name, theme)
     CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
     CloseBtn.TextSize = 14
     CloseBtn.AutoButtonColor = false
-    CloseBtn.ZIndex = 3
+    CloseBtn.ZIndex = 4
 
     local DestroyBtn = Instance.new("TextButton")
     DestroyBtn.Name = "Destroy"
@@ -125,7 +162,7 @@ function library:CreateWindow(name, theme)
     DestroyBtn.TextColor3 = Color3.fromRGB(255,100,100)
     DestroyBtn.TextSize = 14
     DestroyBtn.AutoButtonColor = false
-    DestroyBtn.ZIndex = 3
+    DestroyBtn.ZIndex = 4
 
     -- ===== MAIN BODY =====
     local Main = Instance.new("ImageLabel")
@@ -158,7 +195,6 @@ function library:CreateWindow(name, theme)
     slice(Items, theme1, 0.02)
 
     -- ===== FLOATING OPEN BUTTON =====
-    -- TextButton has no Image. Wrap in an ImageLabel backing.
     local OpenBtn = Instance.new("TextButton")
     OpenBtn.Name = "OpenBtn"
     OpenBtn.Parent = Screen
@@ -172,9 +208,42 @@ function library:CreateWindow(name, theme)
     OpenBtn.AutoButtonColor = false
     OpenBtn.Visible = false
     OpenBtn.Active = true
-    OpenBtn.Draggable = true
     OpenBtn.ZIndex = 5
     backing(OpenBtn, theme1, 0.03, 4)
+
+    -- ===== DRAG WIRING =====
+    -- whole window moves as one unit because Main is a child of Top.
+    local topDragging = false
+    makeDrag(Top,
+        function() topDragging = true end,
+        function() topDragging = false end
+    )
+
+    -- clicking Close/Destroy shouldn't drag the window
+    -- (InputBegan on Top fires first via ZIndex; suppress via ZIndex + Active=false on controls area)
+    Controls.Active = true
+    Title.Active = true  -- title bar area stays draggable via Top
+
+    local openDragging = false
+    makeDrag(OpenBtn,
+        function() openDragging = true end,
+        function() openDragging = false end
+    )
+
+    -- separate Open button click from drag: only fire open if mouse didn't move
+    local openPressStart = nil
+    OpenBtn.MouseButton1Down:Connect(function()
+        openPressStart = OpenBtn.AbsolutePosition
+    end)
+    OpenBtn.MouseButton1Up:Connect(function()
+        if not openPressStart then return end
+        local moved = (OpenBtn.AbsolutePosition - openPressStart).Magnitude
+        openPressStart = nil
+        if moved < 4 then
+            -- treat as click
+            if isOpen ~= nil then return end
+        end
+    end)
 
     -- ===== OPEN / CLOSE / DESTROY =====
     local isOpen = true
@@ -200,7 +269,25 @@ function library:CreateWindow(name, theme)
 
     CloseBtn.MouseButton1Click:Connect(closeUI)
     DestroyBtn.MouseButton1Click:Connect(destroyUI)
-    OpenBtn.MouseButton1Click:Connect(openUI)
+
+    -- Open button: click to open, drag to move. small threshold separates the two.
+    local openDragStartPos, openClickStart = nil, nil
+    OpenBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            openClickStart = input.Position
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if not openClickStart then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        local delta = (input.Position - openClickStart).Magnitude
+        openClickStart = nil
+        if delta < 4 and not isOpen and not isDestroyed then
+            setOpen(true)
+        end
+    end)
 
     local conn
     conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -273,7 +360,6 @@ function library:CreateWindow(name, theme)
 
         local InsideTab = {}
 
-        -- ===== DROPDOWN =====
         function InsideTab:CreateDropdown(text, list, callback)
             text = text or "Dropdown"
             list = list or {}
@@ -352,7 +438,6 @@ function library:CreateWindow(name, theme)
             end
         end
 
-        -- ===== SLIDER =====
         function InsideTab:CreateSlider(text, minvalue, maxvalue, callback)
             text = text or "Slider"
             minvalue = minvalue or 0
@@ -430,7 +515,6 @@ function library:CreateWindow(name, theme)
             end)
         end
 
-        -- ===== TOGGLE =====
         function InsideTab:CreateToggle(text, callback)
             text = text or "New Toggle"
             callback = callback or function() end
@@ -500,7 +584,6 @@ function library:CreateWindow(name, theme)
             return switch
         end
 
-        -- ===== CHECKBOX =====
         function InsideTab:CreateCheckbox(text, callback)
             text = text or "Checkbox"
             callback = callback or function() end
@@ -552,7 +635,6 @@ function library:CreateWindow(name, theme)
             end)
         end
 
-        -- ===== BUTTON =====
         function InsideTab:CreateButton(text, callback)
             text = text or "New Button"
             callback = callback or function() end
