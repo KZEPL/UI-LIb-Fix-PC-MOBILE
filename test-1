@@ -1,683 +1,583 @@
+-- language: Luau, file: library.lua, target: Roblox CoreGui
+-- cleaned rebuild of the Vex X Kyzen UI library
+-- fixes: label sizing, Close/Destroy visibility, OpenBtn recovery, LeftAlt toggle, drag persistence
+
 local library = {}
 library.Name = "Vex X Kyzen ui"
 
--- Keep the play function for sounds
+local UserInputService = game:GetService("UserInputService")
+
 local function play(id)
     for _, v in next, workspace:GetChildren() do
-        if v.Name == "GUISound" then
-            v:Destroy()
-        end
+        if v.Name == "GUISound" then v:Destroy() end
     end
-    local Sound = Instance.new("Sound", workspace)
-    Sound.Name = "GUISound"
-    Sound.Volume = 6
-    Sound.SoundId = id
-    Sound:Play()
+    local s = Instance.new("Sound", workspace)
+    s.Name = "GUISound"
+    s.Volume = 6
+    s.SoundId = id
+    s:Play()
+end
+
+-- theme table: theme1 = top/tabs/items, theme2 = main bodies, theme3 = accent
+local Themes = {
+    Normal    = { Color3.fromRGB(32,32,32),  Color3.fromRGB(26,26,26),  Color3.fromRGB(176,148,255), false },
+    Reverse   = { Color3.fromRGB(26,26,26),  Color3.fromRGB(32,32,32),  Color3.fromRGB(176,148,255), false },
+    Blood     = { Color3.fromRGB(32,32,32),  Color3.fromRGB(26,26,26),  Color3.fromRGB(138,3,3),     false },
+    Gainsboro = { Color3.fromRGB(32,32,32),  Color3.fromRGB(26,26,26),  Color3.fromRGB(220,220,221), true  },
+    Canary    = { Color3.fromRGB(32,32,32),  Color3.fromRGB(26,26,26),  Color3.fromRGB(255,253,130), false },
+    Emerald   = { Color3.fromRGB(32,32,32),  Color3.fromRGB(26,26,26),  Color3.fromRGB(68,207,108),  false },
+    Crimson   = { Color3.fromRGB(32,32,32),  Color3.fromRGB(26,26,26),  Color3.fromRGB(214,40,57),   false },
+    ["Deep Sea"] = { Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(40,81,214),  false },
+}
+
+local ROUND_IMG = "rbxassetid://3570695787"
+
+local function slice(img, color, scale)
+    img.Image = ROUND_IMG
+    img.ImageColor3 = color
+    img.ScaleType = Enum.ScaleType.Slice
+    img.SliceCenter = Rect.new(100,100,100,100)
+    img.SliceScale = scale or 0.03
+    img.BackgroundTransparency = 1
 end
 
 function library:CreateWindow(name, theme)
-    local theme1, theme2, theme3
-    local toolight = false
+    local t = Themes[theme] or Themes.Normal
+    local theme1, theme2, theme3, toolight = t[1], t[2], t[3], t[4]
 
-    -- Clear previous instances of this UI
-    for i, v in pairs(game.CoreGui:GetChildren()) do
-        if v.Name == self.Name then
-            v:Destroy()
-        end
+    for _, v in pairs(game.CoreGui:GetChildren()) do
+        if v.Name == self.Name then v:Destroy() end
     end
 
-    -- Theme Setup
-    if theme == "Normal" then
-        theme1, theme2, theme3 = Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(176, 148, 255)
-    elseif theme == "Reverse" then
-        theme1, theme2, theme3 = Color3.fromRGB(26,26,26), Color3.fromRGB(32,32,32), Color3.fromRGB(176, 148, 255)
-    elseif theme == "Blood" then
-        theme1, theme2, theme3 = Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(138, 3, 3)
-    elseif theme == "Gainsboro" then
-        theme1, theme2, theme3 = Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(220, 220, 221)
-        toolight = true
-    elseif theme == "Canary" then
-        theme1, theme2, theme3 = Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(255, 253, 130)
-    elseif theme == "Emerald" then
-        theme1, theme2, theme3 = Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(68, 207, 108)
-    elseif theme == "Crimson" then
-        theme1, theme2, theme3 = Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(214, 40, 57)
-    elseif theme == "Deep Sea" then
-        theme1, theme2, theme3 = Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(40, 81, 214)
-    else
-        -- Fallback to Normal
-        theme1, theme2, theme3 = Color3.fromRGB(32,32,32), Color3.fromRGB(26,26,26), Color3.fromRGB(176, 148, 255)
-    end
-    print("Theme selected: " .. theme)
-
-    local UserInputService = game:GetService("UserInputService")
-
-    -- Instances
     local Screen = Instance.new("ScreenGui")
-    local Top = Instance.new("ImageLabel")
-    local Toggle = Instance.new("TextButton") 
-    local Main = Instance.new("ImageLabel")
-    local Tabs = Instance.new("ImageLabel")
-    local UIGridLayout = Instance.new("UIGridLayout")
-    local TabContainer = Instance.new("Folder")
-    local Items = Instance.new("ImageLabel")
-    local TextLabel = Instance.new("TextLabel")
-    
-    -- Window Control Buttons
-    local ControlContainer = Instance.new("Frame")
-    local CloseBtn = Instance.new("TextButton")
-    local DestroyBtn = Instance.new("TextButton")
-
-    -- Floating Open Button (Visible when closed)
-    local OpenBtn = Instance.new("TextButton")
-
-    -- Properties
     Screen.Name = self.Name
     Screen.Parent = game:WaitForChild("CoreGui")
-    Screen.Enabled = true
     Screen.ResetOnSpawn = false
+    Screen.IgnoreGuiInset = true
+    Screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
+    -- ===== TOP BAR =====
+    local Top = Instance.new("ImageLabel")
     Top.Name = "Top"
     Top.Parent = Screen
     Top.AnchorPoint = Vector2.new(0.5, 0.5)
-    Top.BackgroundColor3 = Color3.fromRGB(33, 32, 49)
-    Top.BackgroundTransparency = 1.000
+    Top.Position = UDim2.new(0.5, 0, 0.24, 0)
+    Top.Size = UDim2.new(0, 560, 0, 28)
+    slice(Top, theme1, 0.03)
     Top.Active = true
-    Top.Position = UDim2.new(0.5, 0, 0.240482569, 0)
-    Top.Size = UDim2.new(0, 558, 0, 25)
-    Top.Image = "rbxassetid://3570695787"
-    Top.ImageColor3 = theme1
-    Top.ScaleType = Enum.ScaleType.Slice
-    Top.SliceCenter = Rect.new(100, 100, 100, 100)
-    Top.SliceScale = 0.030
-    Top.Draggable = true
 
-    TextLabel.Parent = Top
-    TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    TextLabel.BackgroundTransparency = 1.000
-    TextLabel.Position = UDim2.new(0.0358817279, 0, 0, 0)
-    TextLabel.Size = UDim2.new(0, 515, 0, 20)
-    TextLabel.Font = Enum.Font.SourceSansSemibold
-    TextLabel.Text = name
-    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TextLabel.TextSize = 14.000
+    local Title = Instance.new("TextLabel")
+    Title.Parent = Top
+    Title.BackgroundTransparency = 1
+    Title.Position = UDim2.new(0.06, 0, 0, 0)
+    Title.Size = UDim2.new(1, -140, 1, 0)
+    Title.Font = Enum.Font.SourceSansSemibold
+    Title.Text = name
+    Title.TextColor3 = Color3.fromRGB(255,255,255)
+    Title.TextSize = 14
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.ZIndex = 2
 
-    -- Toggle Button (Open/Close)
-    Toggle.Name = "Toggle"
-    Toggle.Parent = Top
-    Toggle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Toggle.BackgroundTransparency = 1.000
-    Toggle.Position = UDim2.new(0.00900000613, 0, 0.142857149, 0)
-    Toggle.Size = UDim2.new(0, 30, 0, 16)
-    Toggle.Font = Enum.Font.SourceSansBold
-    Toggle.Text = "vex"
-    Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Toggle.TextSize = 14.000
+    -- controls container (right-aligned, no more clipping)
+    local Controls = Instance.new("Frame")
+    Controls.Name = "Controls"
+    Controls.Parent = Top
+    Controls.BackgroundTransparency = 1
+    Controls.AnchorPoint = Vector2.new(1, 0.5)
+    Controls.Position = UDim2.new(1, -8, 0.5, 0)
+    Controls.Size = UDim2.new(0, 130, 0, 22)
 
-    -- Control Container (Holds Close & Destroy)
-    ControlContainer.Name = "Controls"
-    ControlContainer.Parent = Top
-    ControlContainer.BackgroundTransparency = 1
-    ControlContainer.Position = UDim2.new(0.85, 0, 0.1, 0)
-    ControlContainer.Size = UDim2.new(0, 80, 0, 20)
-
+    local CloseBtn = Instance.new("TextButton")
     CloseBtn.Name = "Close"
-    CloseBtn.Parent = ControlContainer
+    CloseBtn.Parent = Controls
     CloseBtn.BackgroundTransparency = 1
-    CloseBtn.Size = UDim2.new(0, 35, 0, 20)
+    CloseBtn.Size = UDim2.new(0, 60, 1, 0)
     CloseBtn.Position = UDim2.new(0, 0, 0, 0)
     CloseBtn.Font = Enum.Font.SourceSansBold
     CloseBtn.Text = "Close"
-    CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CloseBtn.TextSize = 14.000
+    CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    CloseBtn.TextSize = 14
+    CloseBtn.AutoButtonColor = false
+    CloseBtn.ZIndex = 3
 
+    local DestroyBtn = Instance.new("TextButton")
     DestroyBtn.Name = "Destroy"
-    DestroyBtn.Parent = ControlContainer
+    DestroyBtn.Parent = Controls
     DestroyBtn.BackgroundTransparency = 1
-    DestroyBtn.Size = UDim2.new(0, 40, 0, 20)
-    DestroyBtn.Position = UDim2.new(0.5, 0, 0, 0)
+    DestroyBtn.Size = UDim2.new(0, 64, 1, 0)
+    DestroyBtn.Position = UDim2.new(0, 62, 0, 0)
     DestroyBtn.Font = Enum.Font.SourceSansBold
     DestroyBtn.Text = "Destroy"
-    DestroyBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-    DestroyBtn.TextSize = 14.000
+    DestroyBtn.TextColor3 = Color3.fromRGB(255,100,100)
+    DestroyBtn.TextSize = 14
+    DestroyBtn.AutoButtonColor = false
+    DestroyBtn.ZIndex = 3
 
+    -- ===== MAIN BODY =====
+    local Main = Instance.new("ImageLabel")
     Main.Name = "Main"
     Main.Parent = Top
-    Main.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    Main.BackgroundTransparency = 1.000
-    Main.Position = UDim2.new(0.5, 0, 6.75571394, 0)
-    Main.Size = UDim2.new(0, 558, 0, 298)
-    Main.Image = "rbxassetid://3570695787"
-    Main.ImageColor3 = theme2
-    Main.ScaleType = Enum.ScaleType.Slice
-    Main.SliceCenter = Rect.new(100, 100, 100, 100)
-    Main.SliceScale = 0.030
+    Main.AnchorPoint = Vector2.new(0.5, 0)
+    Main.Position = UDim2.new(0.5, 0, 1, 4)
+    Main.Size = UDim2.new(0, 560, 0, 300)
+    slice(Main, theme2, 0.03)
+    Main.Active = true
 
+    local Tabs = Instance.new("ImageLabel")
     Tabs.Name = "Tabs"
-    Tabs.Parent = TabContainer
-    Tabs.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Tabs.BackgroundTransparency = 1.000
-    Tabs.Position = UDim2.new(0.0129999956, 0, 0.0300000086, 0)
-    Tabs.Size = UDim2.new(0, 119, 0, 282)
-    Tabs.Image = "rbxassetid://3570695787"
-    Tabs.ImageColor3 = theme1
-    Tabs.ScaleType = Enum.ScaleType.Slice
-    Tabs.SliceCenter = Rect.new(100, 100, 100, 100)
-    Tabs.SliceScale = 0.020
+    Tabs.Parent = Main
+    Tabs.Position = UDim2.new(0, 10, 0, 10)
+    Tabs.Size = UDim2.new(0, 120, 0, 280)
+    slice(Tabs, theme1, 0.02)
 
-    UIGridLayout.Parent = Tabs
-    UIGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIGridLayout.CellSize = UDim2.new(0, 119, 0, 26)
+    local TabsLayout = Instance.new("UIGridLayout")
+    TabsLayout.Parent = Tabs
+    TabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TabsLayout.CellSize = UDim2.new(0, 120, 0, 26)
+    TabsLayout.CellPadding = UDim2.new(0, 0, 0, 2)
 
-    TabContainer.Name = "TabContainer"
-    TabContainer.Parent = Main
-
+    local Items = Instance.new("ImageLabel")
     Items.Name = "Items"
     Items.Parent = Main
-    Items.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Items.BackgroundTransparency = 1.000
-    Items.Position = UDim2.new(0.245519713, 0, 0.030201342, 0)
-    Items.Size = UDim2.new(0, 414, 0, 282)
-    Items.Image = "rbxassetid://3570695787"
-    Items.ImageColor3 = theme1
-    Items.ScaleType = Enum.ScaleType.Slice
-    Items.SliceCenter = Rect.new(100, 100, 100, 100)
-    Items.SliceScale = 0.020
+    Items.Position = UDim2.new(0, 138, 0, 10)
+    Items.Size = UDim2.new(1, -148, 1, -20)
+    slice(Items, theme1, 0.02)
 
-    -- Floating Open Button (Visible when UI is closed)
+    -- ===== FLOATING OPEN BUTTON =====
+    -- anchored top-left, draggable, visible only when window closed
+    local OpenBtn = Instance.new("TextButton")
     OpenBtn.Name = "OpenBtn"
     OpenBtn.Parent = Screen
-    OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    OpenBtn.BackgroundTransparency = 1.000
-    OpenBtn.Position = UDim2.new(0, 15, 0, 15) -- Top Left corner
-    OpenBtn.Size = UDim2.new(0, 60, 0, 25)
-    OpenBtn.Visible = false
-    OpenBtn.Font = Enum.Font.SourceSansBold
+    OpenBtn.Position = UDim2.new(0, 15, 0, 15)
+    OpenBtn.Size = UDim2.new(0, 64, 0, 26)
     OpenBtn.Text = "Open"
-    OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    OpenBtn.TextSize = 14.000
-    OpenBtn.Image = "rbxassetid://3570695787"
-    OpenBtn.ImageColor3 = theme1
-    OpenBtn.ScaleType = Enum.ScaleType.Slice
-    OpenBtn.SliceCenter = Rect.new(100, 100, 100, 100)
-    OpenBtn.SliceScale = 0.030
+    OpenBtn.Font = Enum.Font.SourceSansBold
+    OpenBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    OpenBtn.TextSize = 14
+    OpenBtn.AutoButtonColor = false
+    OpenBtn.Visible = false
     OpenBtn.Active = true
     OpenBtn.Draggable = true
+    OpenBtn.ZIndex = 5
+    slice(OpenBtn, theme1, 0.03)
 
-    -- Window Logic (Open/Close/Destroy)
+    -- ===== OPEN / CLOSE / DESTROY =====
     local isOpen = true
-    
-    local function openUI()
-        if not isOpen then
-            isOpen = true
-            Top.Visible = true
-            Main.Visible = true
-            OpenBtn.Visible = false
-            Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-            play("rbxassetid://1412830636")
-        end
+    local isDestroyed = false
+
+    local function setOpen(state)
+        if isDestroyed then return end
+        isOpen = state
+        Top.Visible = state
+        Main.Visible = state
+        OpenBtn.Visible = not state
+        play("rbxassetid://1412830636")
     end
 
-    local function closeUI()
-        if isOpen then
-            isOpen = false
-            Top.Visible = false
-            Main.Visible = false
-            OpenBtn.Visible = true
-            play("rbxassetid://1412830636")
-        end
-    end
-
+    local function closeUI() setOpen(false) end
+    local function openUI()  setOpen(true)  end
     local function destroyUI()
+        if isDestroyed then return end
+        isDestroyed = true
         play("rbxassetid://178104975")
-        -- Completely deletes the GUI from memory/CoreGui
         Screen:Destroy()
-        -- Any variables pointing to 'Screen' or its children are now nil
     end
 
-    -- Button Connections
-    Toggle.MouseButton1Click:Connect(closeUI)
     CloseBtn.MouseButton1Click:Connect(closeUI)
-    OpenBtn.MouseButton1Click:Connect(openUI)
     DestroyBtn.MouseButton1Click:Connect(destroyUI)
+    OpenBtn.MouseButton1Click:Connect(openUI)
 
-    -- Keybind Logic (Left Alt)
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        -- Don't trigger if the user is typing in chat
+    -- LeftAlt toggles open/close, ignored while typing in chat
+    local conn
+    conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
-        
+        if isDestroyed then conn:Disconnect() return end
         if input.KeyCode == Enum.KeyCode.LeftAlt then
-            if isOpen then
-                closeUI()
-            else
-                openUI()
-            end
+            setOpen(not isOpen)
         end
     end)
 
     local InsideLibrary = {}
 
     function InsideLibrary:CreateTab(text)
-        local TextButton1 = Instance.new("TextButton")
+        local TabBtn = Instance.new("TextButton")
+        TabBtn.Name = text .. " Button"
+        TabBtn.Parent = Tabs
+        TabBtn.BackgroundTransparency = 1
+        TabBtn.Size = UDim2.new(0, 120, 0, 26)
+        TabBtn.Font = Enum.Font.SourceSansSemibold
+        TabBtn.Text = text
+        TabBtn.TextColor3 = Color3.fromRGB(255,255,255)
+        TabBtn.TextSize = 14
+        TabBtn.AutoButtonColor = false
+
         local Frame = Instance.new("ScrollingFrame")
-        local UIGridLayout_2 = Instance.new("UIGridLayout")
-        local UICorner = Instance.new("UICorner")
-
-        TextButton1.Name = text.." Button"
-        TextButton1.Parent = Tabs
-        TextButton1.BackgroundColor3 = Color3.fromRGB(32,32,32)
-        TextButton1.BackgroundTransparency = 1.000
-        TextButton1.Size = UDim2.new(0, 70, 0, 21)
-        TextButton1.Font = Enum.Font.SourceSansSemibold
-        TextButton1.Text = text
-        TextButton1.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TextButton1.TextSize = 14.000
-
         Frame.Parent = Items
         Frame.Active = true
-        Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        Frame.BackgroundTransparency = 1.000
+        Frame.BackgroundTransparency = 1
         Frame.BorderSizePixel = 0
-        Frame.Position = UDim2.new(0.0170000009, 0, 0.0359999985, 0)
-        Frame.Size = UDim2.new(0, 399, 0, 264)
-        Frame.CanvasSize = UDim2.new(0, 0, 1.1,0)
+        Frame.Position = UDim2.new(0, 6, 0, 6)
+        Frame.Size = UDim2.new(1, -12, 1, -12)
+        Frame.CanvasSize = UDim2.new(0, 0, 0, 0)
         Frame.ScrollBarImageColor3 = theme2
-        Frame.ScrollBarThickness = 7
+        Frame.ScrollBarThickness = 6
+        Frame.Visible = false
+        Frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
-        UICorner.Parent = Frame
+        local Corner = Instance.new("UICorner")
+        Corner.Parent = Frame
 
-        UIGridLayout_2.Parent = Frame
-        UIGridLayout_2.FillDirection = Enum.FillDirection.Vertical
-        UIGridLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
-        UIGridLayout_2.CellSize = UDim2.new(0, 70, 0, 23)
-        UIGridLayout_2.StartCorner = Enum.StartCorner.TopRight
+        local Grid = Instance.new("UIGridLayout")
+        Grid.Parent = Frame
+        Grid.FillDirection = Enum.FillDirection.Vertical
+        Grid.SortOrder = Enum.SortOrder.LayoutOrder
+        Grid.CellSize = UDim2.new(1, -6, 0, 26)
+        Grid.CellPadding = UDim2.new(0, 0, 0, 4)
+        Grid.StartCorner = Enum.StartCorner.TopLeft
 
-        Frame.ChildAdded:Connect(function()
-            if #Frame:GetChildren() > 13 then
-                Frame.CanvasSize = UDim2.new(0, 0, Frame.CanvasSize.Y.Scale + 0.10, 0)
-            end
-        end)
+        -- helper: pad every child so labels never clip
+        local function padRow(row)
+            row.Size = UDim2.new(1, -6, 0, 26)
+            local pad = Instance.new("UIPadding")
+            pad.Parent = row
+            pad.PaddingLeft = UDim.new(0, 6)
+            pad.PaddingRight = UDim.new(0, 6)
+        end
 
-        TextButton1.MouseButton1Click:Connect(function()
-            for i,v in next, Items:GetChildren() do
+        TabBtn.MouseButton1Click:Connect(function()
+            for _, v in next, Items:GetChildren() do
                 if v:IsA("ScrollingFrame") then v.Visible = false end
             end
-            for i,t in next, Tabs:GetChildren() do
-                if t.ClassName ~= "UIGridLayout" then
-                    t.TextColor3 = Color3.fromRGB(255, 255, 255)
+            for _, b in next, Tabs:GetChildren() do
+                if b:IsA("TextButton") then
+                    b.TextColor3 = Color3.fromRGB(255,255,255)
                 end
             end
-            TextButton1.TextColor3 = theme3
+            TabBtn.TextColor3 = theme3
             Frame.Visible = true
             play("rbxassetid://1412830636")
         end)
 
         local InsideTab = {}
 
+        -- ===== DROPDOWN =====
         function InsideTab:CreateDropdown(text, list, callback)
-            -- Same as original
-            local BodyYSize = 0
-            local IsDropped = false
-            callback = callback or function() end
-            list = list or {}
             text = text or "Dropdown"
-            
-            local Dropdown = Instance.new("TextLabel")
-            local TextButton = Instance.new("TextButton")
-            local TextButton_Roundify_2px_2 = Instance.new("ImageLabel")
-            local DropdownContainer = Instance.new("ImageLabel")
-            local UIListLayout_2 = Instance.new("UIListLayout")
+            list = list or {}
+            callback = callback or function() end
 
-            Dropdown.Name = "Dropdown"
-            Dropdown.Parent = Frame
-            Dropdown.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            Dropdown.BackgroundTransparency = 1.000
-            Dropdown.Size = UDim2.new(0, 200, 0, 50)
-            Dropdown.Font = Enum.Font.SourceSansSemibold
-            Dropdown.Text = text
-            Dropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Dropdown.TextSize = 14.000
+            local Row = Instance.new("TextLabel")
+            Row.Name = "Dropdown"
+            Row.Parent = Frame
+            Row.BackgroundTransparency = 1
+            Row.Text = ""
+            padRow(Row)
 
-            TextButton.Parent = Dropdown
-            TextButton.BackgroundTransparency = 1.000
-            TextButton.Position = UDim2.new(1, 0, 0, 0)
-            TextButton.Size = UDim2.new(0, 31, 0, 27)
-            TextButton.ZIndex = 2
-            TextButton.Font = Enum.Font.SourceSansBold
-            TextButton.Text = "+"
-            TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            TextButton.TextSize = 14.000
+            local Label = Instance.new("TextLabel")
+            Label.Parent = Row
+            Label.BackgroundTransparency = 1
+            Label.Position = UDim2.new(0, 0, 0, 0)
+            Label.Size = UDim2.new(1, -40, 1, 0)
+            Label.Font = Enum.Font.SourceSansSemibold
+            Label.Text = text
+            Label.TextColor3 = Color3.fromRGB(255,255,255)
+            Label.TextSize = 14
+            Label.TextXAlignment = Enum.TextXAlignment.Left
 
-            TextButton_Roundify_2px_2.Name = "TextButton_Roundify_2px"
-            TextButton_Roundify_2px_2.Parent = TextButton
-            TextButton_Roundify_2px_2.Active = true
-            TextButton_Roundify_2px_2.AnchorPoint = Vector2.new(0.5, 0.5)
-            TextButton_Roundify_2px_2.BackgroundTransparency = 1.000
-            TextButton_Roundify_2px_2.Position = UDim2.new(0.5, 0, 0.5, 0)
-            TextButton_Roundify_2px_2.Size = UDim2.new(1, 0, 1, 0)
-            TextButton_Roundify_2px_2.Image = "rbxassetid://3570695787"
-            TextButton_Roundify_2px_2.ImageColor3 = theme2
-            TextButton_Roundify_2px_2.ScaleType = Enum.ScaleType.Slice
-            TextButton_Roundify_2px_2.SliceCenter = Rect.new(100, 100, 100, 100)
-            TextButton_Roundify_2px_2.SliceScale = 0.020
+            local ArrowBtn = Instance.new("TextButton")
+            ArrowBtn.Parent = Row
+            ArrowBtn.AnchorPoint = Vector2.new(1, 0.5)
+            ArrowBtn.Position = UDim2.new(1, 0, 0.5, 0)
+            ArrowBtn.Size = UDim2.new(0, 26, 0, 22)
+            ArrowBtn.BackgroundTransparency = 1
+            ArrowBtn.Font = Enum.Font.SourceSansBold
+            ArrowBtn.Text = "+"
+            ArrowBtn.TextColor3 = Color3.fromRGB(255,255,255)
+            ArrowBtn.TextSize = 14
+            ArrowBtn.AutoButtonColor = false
+            slice(ArrowBtn, theme2, 0.02)
 
-            DropdownContainer.Name = "DropdownContainer"
-            DropdownContainer.Parent = TextButton
-            DropdownContainer.BackgroundTransparency = 1.000
-            DropdownContainer.Position = UDim2.new(1.46359456, 0, 0, 0)
-            DropdownContainer.Size = UDim2.new(0, 197, 0, BodyYSize)
-            DropdownContainer.Image = "rbxassetid://3570695787"
-            DropdownContainer.ImageColor3 = theme2
-            DropdownContainer.Visible = false
-            DropdownContainer.ScaleType = Enum.ScaleType.Slice
-            DropdownContainer.SliceCenter = Rect.new(100, 100, 100, 100)
-            DropdownContainer.SliceScale = 0.020
-            DropdownContainer.ZIndex = 3
+            local DropContainer = Instance.new("ImageLabel")
+            DropContainer.Parent = Row
+            DropContainer.AnchorPoint = Vector2.new(1, 0)
+            DropContainer.Position = UDim2.new(1, 0, 1, 4)
+            DropContainer.Size = UDim2.new(0, 197, 0, 0)
+            DropContainer.Visible = false
+            DropContainer.ZIndex = 10
+            slice(DropContainer, theme2, 0.02)
+            DropContainer.AutomaticSize = Enum.AutomaticSize.Y
 
-            UIListLayout_2.Parent = DropdownContainer
-            UIListLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
+            local DropLayout = Instance.new("UIListLayout")
+            DropLayout.Parent = DropContainer
+            DropLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-            TextButton.MouseButton1Click:Connect(function()
+            local IsDropped = false
+            ArrowBtn.MouseButton1Click:Connect(function()
                 play("rbxassetid://178104975")
-                if not IsDropped then
-                    IsDropped = true
-                    TextButton.TextColor3 = theme3
-                    DropdownContainer.Visible = true
-                else
-                    IsDropped = false
-                    TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    DropdownContainer.Visible = false
-                end
+                IsDropped = not IsDropped
+                DropContainer.Visible = IsDropped
+                ArrowBtn.TextColor3 = IsDropped and theme3 or Color3.fromRGB(255,255,255)
             end)
 
-            for i,v in pairs(list) do
-                BodyYSize = BodyYSize + 27
-                local TextButton_2 = Instance.new("TextButton")
-                TextButton_2.Parent = DropdownContainer
-                TextButton_2.BackgroundTransparency = 1.000
-                TextButton_2.Size = UDim2.new(0, 197, 0, 27)
-                TextButton_2.Font = Enum.Font.SourceSansSemibold
-                TextButton_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-                TextButton_2.Text = v
-                TextButton_2.TextSize = 14.000
-                TextButton_2.ZIndex = 4
-
-                TextButton_2.MouseButton1Click:Connect(function()
-                    Dropdown.Text = v
+            for _, v in ipairs(list) do
+                local Opt = Instance.new("TextButton")
+                Opt.Parent = DropContainer
+                Opt.BackgroundTransparency = 1
+                Opt.Size = UDim2.new(1, 0, 0, 27)
+                Opt.Font = Enum.Font.SourceSansSemibold
+                Opt.Text = v
+                Opt.TextColor3 = Color3.fromRGB(255,255,255)
+                Opt.TextSize = 14
+                Opt.AutoButtonColor = false
+                Opt.ZIndex = 11
+                Opt.MouseButton1Click:Connect(function()
+                    Label.Text = v
                     callback(v)
                     IsDropped = false
-                    DropdownContainer.Visible = false
+                    DropContainer.Visible = false
                 end)
             end
         end
 
+        -- ===== SLIDER =====
         function InsideTab:CreateSlider(text, minvalue, maxvalue, callback)
-            -- Same as original
             text = text or "Slider"
             minvalue = minvalue or 0
             maxvalue = maxvalue or 100
             callback = callback or function() end
 
             local mouse = game.Players.LocalPlayer:GetMouse()
-            local uis = game:GetService("UserInputService")
-            local Value
 
-            local Slider = Instance.new("TextLabel")
-            local Frame_3 = Instance.new("ImageLabel")
-            local SliderButton = Instance.new("TextButton")
-            local SliderInner = Instance.new("ImageLabel")
-            local TextLabel_2 = Instance.new("TextLabel")
-            
-            Slider.Name = "Slider"
-            Slider.Parent = Frame
-            Slider.BackgroundTransparency = 1.000
-            Slider.Size = UDim2.new(0, 200, 0, 50)
-            Slider.Font = Enum.Font.SourceSansSemibold
-            Slider.Text = text
-            Slider.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Slider.TextSize = 14.000
-            
-            Frame_3.Name = "Frame"
-            Frame_3.Parent = Slider
-            Frame_3.BackgroundTransparency = 1.000
-            Frame_3.Position = UDim2.new(1, 0, 0.395000011, 0)
-            Frame_3.Size = UDim2.new(0, 148, 0, 8)
-            Frame_3.Image = "rbxassetid://3570695787"
-            Frame_3.ImageColor3 = theme2
-            Frame_3.ScaleType = Enum.ScaleType.Slice
-            Frame_3.SliceCenter = Rect.new(100, 100, 100, 100)
-            Frame_3.SliceScale = 0.020
-            
-            SliderButton.Name = "SliderButton"
-            SliderButton.Parent = Slider
-            SliderButton.BackgroundTransparency = 1.000
-            SliderButton.Position = UDim2.new(1, 0, 0.391304344, 0)
-            SliderButton.Size = UDim2.new(0, 148, 0, 8)
-            
-            SliderInner.Name = "SliderInner"
-            SliderInner.Parent = SliderButton
-            SliderInner.BackgroundTransparency = 1.000
-            SliderInner.Size = UDim2.new(0, 0, 0, 8)
-            SliderInner.Image = "rbxassetid://3570695787"
-            SliderInner.ImageColor3 = theme3
-            SliderInner.ScaleType = Enum.ScaleType.Slice
-            SliderInner.SliceCenter = Rect.new(100, 100, 100, 100)
-            SliderInner.SliceScale = 0.020
-            
-            TextLabel_2.Parent = Slider
-            TextLabel_2.BackgroundTransparency = 1.000
-            TextLabel_2.Position = UDim2.new(3.10714293, 0, 0.4, 0)
-            TextLabel_2.Size = UDim2.new(0, 33, 0, 7)
-            TextLabel_2.Font = Enum.Font.SourceSansBold
-            TextLabel_2.Text = tostring(minvalue)
-            TextLabel_2.TextColor3 = theme3
-            TextLabel_2.TextSize = 13.000
+            local Row = Instance.new("TextLabel")
+            Row.Name = "Slider"
+            Row.Parent = Frame
+            Row.BackgroundTransparency = 1
+            Row.Text = ""
+            padRow(Row)
 
-            SliderButton.MouseButton1Down:Connect(function()
-                Value = math.floor((((tonumber(maxvalue) - tonumber(minvalue)) / 148) * SliderInner.AbsoluteSize.X) + tonumber(minvalue)) or 0
-                pcall(function() callback(Value) TextLabel_2.Text = Value end)
-                SliderInner.Size = UDim2.new(0, math.clamp(mouse.X - SliderInner.AbsolutePosition.X, 0, 148), 0, 8)
-                
-                local moveconnection = mouse.Move:Connect(function()
-                    Value = math.floor((((tonumber(maxvalue) - tonumber(minvalue)) / 148) * SliderInner.AbsoluteSize.X) + tonumber(minvalue))
-                    pcall(function() callback(Value) TextLabel_2.Text = Value end)
-                    SliderInner.Size = UDim2.new(0, math.clamp(mouse.X - SliderInner.AbsolutePosition.X, 0, 148), 0, 8)
-                end)
-                
-                local releaseconnection = uis.InputEnded:Connect(function(Mouse)
-                    if Mouse.UserInputType == Enum.UserInputType.MouseButton1 then
-                        moveconnection:Disconnect()
-                        releaseconnection:Disconnect()
-                    end
-                end)
+            local Label = Instance.new("TextLabel")
+            Label.Parent = Row
+            Label.BackgroundTransparency = 1
+            Label.Position = UDim2.new(0, 0, 0, 0)
+            Label.Size = UDim2.new(1, -170, 1, 0)
+            Label.Font = Enum.Font.SourceSansSemibold
+            Label.Text = text
+            Label.TextColor3 = Color3.fromRGB(255,255,255)
+            Label.TextSize = 14
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+
+            local BarBack = Instance.new("ImageLabel")
+            BarBack.Parent = Row
+            BarBack.AnchorPoint = Vector2.new(1, 0.5)
+            BarBack.Position = UDim2.new(1, -30, 0.5, 0)
+            BarBack.Size = UDim2.new(0, 120, 0, 8)
+            slice(BarBack, theme2, 0.02)
+
+            local BarFill = Instance.new("ImageLabel")
+            BarFill.Parent = BarBack
+            BarFill.Size = UDim2.new(0, 0, 1, 0)
+            slice(BarFill, theme3, 0.02)
+
+            local ValLabel = Instance.new("TextLabel")
+            ValLabel.Parent = Row
+            ValLabel.BackgroundTransparency = 1
+            ValLabel.AnchorPoint = Vector2.new(1, 0.5)
+            ValLabel.Position = UDim2.new(1, 0, 0.5, 0)
+            ValLabel.Size = UDim2.new(0, 28, 1, 0)
+            ValLabel.Font = Enum.Font.SourceSansBold
+            ValLabel.Text = tostring(minvalue)
+            ValLabel.TextColor3 = theme3
+            ValLabel.TextSize = 13
+
+            local dragging = false
+            local function update()
+                local rel = math.clamp(mouse.X - BarBack.AbsolutePosition.X, 0, BarBack.AbsoluteSize.X)
+                local alpha = rel / BarBack.AbsoluteSize.X
+                local val = math.floor((maxvalue - minvalue) * alpha + minvalue)
+                BarFill.Size = UDim2.new(alpha, 0, 1, 0)
+                ValLabel.Text = tostring(val)
+                pcall(callback, val)
+            end
+
+            BarBack.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = true
+                    update()
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    update()
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = false
+                end
             end)
         end
 
-        function InsideTab:Show()
-            for i,v in next, Items:GetChildren() do
-                if v:IsA("ScrollingFrame") then v.Visible = false end
-            end
-            Frame.Visible = true
-            TextButton1.TextColor3 = theme3
-        end
-
+        -- ===== TOGGLE =====
         function InsideTab:CreateToggle(text, callback)
-            -- Same as original
             text = text or "New Toggle"
             callback = callback or function() end
-            local switchactions = {}
-            local Toggle_2 = Instance.new("TextLabel")
-            local Frame_t = Instance.new("ImageLabel")
-            local Frame_2 = Instance.new("ImageLabel")
-            local ToggleButton = Instance.new("TextButton")
 
-            Toggle_2.Name = "Toggle"
-            Toggle_2.Parent = Frame
-            Toggle_2.BackgroundTransparency = 1.000
-            Toggle_2.Size = UDim2.new(0, 200, 0, 50)
-            Toggle_2.Font = Enum.Font.SourceSansSemibold
-            Toggle_2.Text = text
-            Toggle_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Toggle_2.TextSize = 14.000
+            local Row = Instance.new("TextLabel")
+            Row.Name = "Toggle"
+            Row.Parent = Frame
+            Row.BackgroundTransparency = 1
+            Row.Text = ""
+            padRow(Row)
 
-            Frame_t.Name = "Frame"
-            Frame_t.Parent = Toggle_2
-            Frame_t.BackgroundTransparency = 1.000
-            Frame_t.Position = UDim2.new(1, 0, 0.333333343, 0)
-            Frame_t.Size = UDim2.new(0, 27, 0, 13)
-            Frame_t.Image = "rbxassetid://3570695787"
-            Frame_t.ImageColor3 = theme2
-            Frame_t.ScaleType = Enum.ScaleType.Slice
-            Frame_t.SliceCenter = Rect.new(100, 100, 100, 100)
-            Frame_t.SliceScale = 0.250
+            local Label = Instance.new("TextLabel")
+            Label.Parent = Row
+            Label.BackgroundTransparency = 1
+            Label.Position = UDim2.new(0, 0, 0, 0)
+            Label.Size = UDim2.new(1, -40, 1, 0)
+            Label.Font = Enum.Font.SourceSansSemibold
+            Label.Text = text
+            Label.TextColor3 = Color3.fromRGB(255,255,255)
+            Label.TextSize = 14
+            Label.TextXAlignment = Enum.TextXAlignment.Left
 
-            Frame_2.Name = "Frame_2"
-            Frame_2.Parent = Frame_t
-            Frame_2.BackgroundTransparency = 1.000
-            Frame_2.Position = UDim2.new(0, 3, 0.150000006, 0)
-            Frame_2.Size = UDim2.new(0, 9, 0, 9)
-            Frame_2.Image = "rbxassetid://3570695787"
-            Frame_2.ScaleType = Enum.ScaleType.Slice
-            Frame_2.SliceCenter = Rect.new(100, 100, 100, 100)
-            Frame_2.SliceScale = 0.250
+            local Track = Instance.new("ImageLabel")
+            Track.Parent = Row
+            Track.AnchorPoint = Vector2.new(1, 0.5)
+            Track.Position = UDim2.new(1, 0, 0.5, 0)
+            Track.Size = UDim2.new(0, 32, 0, 16)
+            slice(Track, theme2, 0.25)
 
-            ToggleButton.Name = "ToggleButton"
-            ToggleButton.Parent = Toggle_2
-            ToggleButton.BackgroundTransparency = 1.000
-            ToggleButton.Position = UDim2.new(1, 0, 0.333333552, 0)
-            ToggleButton.Size = UDim2.new(0, 27, 0, 15)
+            local Knob = Instance.new("ImageLabel")
+            Knob.Parent = Track
+            Knob.Position = UDim2.new(0, 2, 0.5, -5)
+            Knob.Size = UDim2.new(0, 10, 0, 10)
+            slice(Knob, toolight and theme3 or Color3.fromRGB(255,255,255), 0.25)
+
+            local ClickArea = Instance.new("TextButton")
+            ClickArea.Parent = Row
+            ClickArea.AnchorPoint = Vector2.new(1, 0.5)
+            ClickArea.Position = UDim2.new(1, 0, 0.5, 0)
+            ClickArea.Size = UDim2.new(0, 32, 0, 20)
+            ClickArea.BackgroundTransparency = 1
+            ClickArea.Text = ""
 
             local enabled = false
+            local function render()
+                Track.ImageColor3 = enabled and theme3 or theme2
+                Knob.Position = enabled and UDim2.new(1, -12, 0.5, -5) or UDim2.new(0, 2, 0.5, -5)
+                if toolight then
+                    Knob.ImageColor3 = enabled and Color3.fromRGB(26,26,26) or theme3
+                end
+            end
+
             local function trigger()
                 enabled = not enabled
-                pcall(callback, enabled)
+                render()
                 play("rbxassetid://6309164078")
-                if enabled then
-                    Frame_t.ImageColor3 = theme3
-                    if toolight then Frame_2.ImageColor3 = Color3.fromRGB(26,26,26) end
-                    Frame_2.Position = UDim2.new(0.59, 0, 0.150000006, 0)
-                else
-                    Frame_t.ImageColor3 = theme2
-                    if toolight then Frame_2.ImageColor3 = theme3 end
-                    Frame_2.Position = UDim2.new(0, 3, 0.150000006, 0)
-                end
+                pcall(callback, enabled)
             end
+            ClickArea.MouseButton1Click:Connect(trigger)
 
-            ToggleButton.MouseButton1Click:Connect(trigger)
-
-            function switchactions:Set(state)
+            local switch = {}
+            function switch:Set(state)
                 enabled = state
-                if enabled then
-                    Frame_t.ImageColor3 = theme3
-                    if toolight then Frame_2.ImageColor3 = Color3.fromRGB(26,26,26) end
-                    Frame_2.Position = UDim2.new(0.59, 0, 0.150000006, 0)
-                else
-                    Frame_t.ImageColor3 = theme2
-                    if toolight then Frame_2.ImageColor3 = theme3 end
-                    Frame_2.Position = UDim2.new(0, 3, 0.150000006, 0)
-                end
+                render()
                 pcall(callback, enabled)
             end
-            return switchactions
+            return switch
         end
 
+        -- ===== CHECKBOX =====
         function InsideTab:CreateCheckbox(text, callback)
-            -- Same as original
-            local Cheat = Instance.new("TextLabel")
-            local MainCheatFrame = Instance.new("ImageLabel")
-            local InsideCheatFrame = Instance.new("ImageLabel")
-            local CheatButton = Instance.new("TextButton")
-            
-            Cheat.Name = "Cheat"
-            Cheat.Parent = Frame
-            Cheat.BackgroundTransparency = 1.000
-            Cheat.Size = UDim2.new(0, 200, 0, 50)
-            Cheat.Text = text
-            Cheat.Font = Enum.Font.SourceSansSemibold
-            Cheat.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Cheat.TextSize = 14.000
-            
-            MainCheatFrame.Name = "MainCheatFrame"
-            MainCheatFrame.Parent = Cheat
-            MainCheatFrame.BackgroundTransparency = 1.000
-            MainCheatFrame.Position = UDim2.new(1, 0, 0.129999995, 0)
-            MainCheatFrame.Size = UDim2.new(0, 18, 0, 18)
-            MainCheatFrame.Image = "rbxassetid://3570695787"
-            MainCheatFrame.ImageColor3 = theme2
-            MainCheatFrame.ScaleType = Enum.ScaleType.Slice
-            MainCheatFrame.SliceCenter = Rect.new(100, 100, 100, 100)
-            MainCheatFrame.SliceScale = 0.020
-            
-            InsideCheatFrame.Name = "Frame"
-            InsideCheatFrame.Parent = MainCheatFrame
-            InsideCheatFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-            InsideCheatFrame.BackgroundTransparency = 1.000
-            InsideCheatFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-            InsideCheatFrame.Size = UDim2.new(0, 14, 0, 14)
-            InsideCheatFrame.Image = "rbxassetid://3570695787"
-            InsideCheatFrame.ImageColor3 = theme2
-            InsideCheatFrame.ScaleType = Enum.ScaleType.Slice
-            InsideCheatFrame.SliceCenter = Rect.new(100, 100, 100, 100)
-            InsideCheatFrame.SliceScale = 0.020
-            
-            CheatButton.Parent = MainCheatFrame
-            CheatButton.BackgroundTransparency = 1.000
-            CheatButton.Size = UDim2.new(0, 18, 0, 18)
-            CheatButton.ZIndex = 2
+            text = text or "Checkbox"
+            callback = callback or function() end
 
-            local enabledcheat = false
-            local function triggercheat()
-                enabledcheat = not enabledcheat
-                pcall(callback, enabledcheat)
+            local Row = Instance.new("TextLabel")
+            Row.Name = "Checkbox"
+            Row.Parent = Frame
+            Row.BackgroundTransparency = 1
+            Row.Text = ""
+            padRow(Row)
+
+            local Label = Instance.new("TextLabel")
+            Label.Parent = Row
+            Label.BackgroundTransparency = 1
+            Label.Position = UDim2.new(0, 0, 0, 0)
+            Label.Size = UDim2.new(1, -30, 1, 0)
+            Label.Font = Enum.Font.SourceSansSemibold
+            Label.Text = text
+            Label.TextColor3 = Color3.fromRGB(255,255,255)
+            Label.TextSize = 14
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+
+            local Box = Instance.new("ImageLabel")
+            Box.Parent = Row
+            Box.AnchorPoint = Vector2.new(1, 0.5)
+            Box.Position = UDim2.new(1, 0, 0.5, 0)
+            Box.Size = UDim2.new(0, 18, 0, 18)
+            slice(Box, theme2, 0.02)
+
+            local Fill = Instance.new("ImageLabel")
+            Fill.Parent = Box
+            Fill.AnchorPoint = Vector2.new(0.5, 0.5)
+            Fill.Position = UDim2.new(0.5, 0, 0.5, 0)
+            Fill.Size = UDim2.new(0, 10, 0, 10)
+            slice(Fill, theme2, 0.02)
+
+            local Click = Instance.new("TextButton")
+            Click.Parent = Box
+            Click.Size = UDim2.new(1, 0, 1, 0)
+            Click.BackgroundTransparency = 1
+            Click.Text = ""
+
+            local enabled = false
+            Click.MouseButton1Click:Connect(function()
+                enabled = not enabled
+                Fill.ImageColor3 = enabled and theme3 or theme2
                 play("rbxassetid://6309164078")
-                if enabledcheat then
-                    InsideCheatFrame.ImageColor3 = theme3
-                else
-                    InsideCheatFrame.ImageColor3 = theme2
-                end
-            end
-            CheatButton.MouseButton1Click:Connect(triggercheat)
+                pcall(callback, enabled)
+            end)
         end
 
+        -- ===== BUTTON =====
         function InsideTab:CreateButton(text, callback)
-            -- Same as original
             text = text or "New Button"
             callback = callback or function() end
-            local Button = Instance.new("TextButton")
-            local Button_Roundify_3px = Instance.new("ImageLabel")
-            
-            Button.Name = "Btn"
-            Button.Parent = Frame
-            Button.BackgroundTransparency = 1.000
-            Button.Size = UDim2.new(0, 36, 0, 21)
-            Button.ZIndex = 2
-            Button.Font = Enum.Font.SourceSansSemibold
-            Button.Text = text
-            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Button.TextSize = 14.000
-            
-            Button_Roundify_3px.Parent = Button
-            Button_Roundify_3px.Active = true
-            Button_Roundify_3px.AnchorPoint = Vector2.new(0.5, 0.5)
-            Button_Roundify_3px.BackgroundTransparency = 1.000
-            Button_Roundify_3px.Position = UDim2.new(0.5, 0, 0.5, 0)
-            Button_Roundify_3px.Size = UDim2.new(1, 0, 1, 0)
-            Button_Roundify_3px.Image = "rbxassetid://3570695787"
-            Button_Roundify_3px.ImageColor3 = theme2
-            Button_Roundify_3px.ScaleType = Enum.ScaleType.Slice
-            Button_Roundify_3px.SliceCenter = Rect.new(100, 100, 100, 100)
-            Button_Roundify_3px.SliceScale = 0.030
 
-            Button.MouseButton1Click:Connect(function()
+            local Row = Instance.new("Frame")
+            Row.Name = "ButtonRow"
+            Row.Parent = Frame
+            Row.BackgroundTransparency = 1
+            padRow(Row)
+
+            local Btn = Instance.new("TextButton")
+            Btn.Parent = Row
+            Btn.Size = UDim2.new(1, -6, 1, -4)
+            Btn.Position = UDim2.new(0, 3, 0, 2)
+            Btn.Font = Enum.Font.SourceSansSemibold
+            Btn.Text = text
+            Btn.TextColor3 = Color3.fromRGB(255,255,255)
+            Btn.TextSize = 14
+            Btn.AutoButtonColor = false
+            slice(Btn, theme2, 0.03)
+
+            Btn.MouseButton1Click:Connect(function()
                 pcall(callback)
                 play("rbxassetid://178104975")
             end)
         end
-        
+
+        function InsideTab:Show()
+            for _, v in next, Items:GetChildren() do
+                if v:IsA("ScrollingFrame") then v.Visible = false end
+            end
+            Frame.Visible = true
+            TabBtn.TextColor3 = theme3
+        end
+
         return InsideTab
     end
-    
+
     return InsideLibrary
 end
 
