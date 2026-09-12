@@ -1,3 +1,7 @@
+-- language: Luau, file: library.lua, target: Roblox CoreGui
+-- fix: bar drag now wired to Top, Title, and Controls frame (empty regions)
+--      so any pixel on the bar that isn't a button starts a drag.
+
 local library = {}
 library.Name = "Vex X Kyzen ui"
 
@@ -49,16 +53,18 @@ local function backing(btn, color, scale, z)
     return back
 end
 
--- makeDrag(): manual drag wired to UserInputService. works on any GuiObject.
-local function makeDrag(frame)
+-- makeDrag(): wires drag on any GuiObject. multiple objects can share one target.
+-- listenOn = object that receives InputBegan; target = object whose Position is moved.
+local function makeDrag(listenOn, target)
+    target = target or listenOn
     local dragging, dragStart, startPos = false, nil, nil
 
-    frame.InputBegan:Connect(function(input)
+    listenOn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
-            startPos = frame.Position
+            startPos = target.Position
         end
     end)
 
@@ -67,7 +73,7 @@ local function makeDrag(frame)
         if input.UserInputType == Enum.UserInputType.MouseMovement
         or input.UserInputType == Enum.UserInputType.Touch then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
+            target.Position = UDim2.new(
                 startPos.X.Scale, startPos.X.Offset + delta.X,
                 startPos.Y.Scale, startPos.Y.Offset + delta.Y
             )
@@ -105,21 +111,7 @@ function library:CreateWindow(name, theme)
     Top.Position = UDim2.new(0.5, 0, 0.24, 0)
     Top.Size = UDim2.new(0, 560, 0, 28)
     slice(Top, theme1, 0.03)
-    Top.Active = false
-
-    -- drag strip: spans full Top width, sits above Top but below controls.
-    local DragStrip = Instance.new("TextButton")
-    DragStrip.Name = "DragStrip"
-    DragStrip.Parent = Top
-    DragStrip.BackgroundTransparency = 1
-    DragStrip.Text = ""
-    DragStrip.Size = UDim2.new(1, 0, 1, 0)
-    DragStrip.Position = UDim2.new(0, 0, 0, 0)
-    DragStrip.ZIndex = 2
-    DragStrip.AutoButtonColor = false
-    DragStrip.Active = true
-
-    makeDrag(DragStrip)
+    Top.Active = true
 
     local Title = Instance.new("TextLabel")
     Title.Parent = Top
@@ -132,6 +124,7 @@ function library:CreateWindow(name, theme)
     Title.TextSize = 14
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.ZIndex = 3
+    Title.Active = true
 
     local Controls = Instance.new("Frame")
     Controls.Name = "Controls"
@@ -141,7 +134,6 @@ function library:CreateWindow(name, theme)
     Controls.Position = UDim2.new(1, -8, 0.5, 0)
     Controls.Size = UDim2.new(0, 130, 0, 22)
     Controls.ZIndex = 4
-    Controls.Active = true
 
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Name = "Close"
@@ -168,6 +160,11 @@ function library:CreateWindow(name, theme)
     DestroyBtn.TextSize = 14
     DestroyBtn.AutoButtonColor = false
     DestroyBtn.ZIndex = 5
+
+    -- wire drag on Top, Title, and Controls (empty frame area). buttons above them still click.
+    makeDrag(Top, Top)
+    makeDrag(Title, Top)
+    makeDrag(Controls, Top)
 
     -- ===== MAIN BODY =====
     local Main = Instance.new("ImageLabel")
@@ -216,7 +213,7 @@ function library:CreateWindow(name, theme)
     OpenBtn.ZIndex = 5
     backing(OpenBtn, theme1, 0.03, 4)
 
-    makeDrag(OpenBtn)
+    makeDrag(OpenBtn, OpenBtn)
 
     -- ===== OPEN / CLOSE / DESTROY =====
     local isOpen = true
@@ -243,7 +240,7 @@ function library:CreateWindow(name, theme)
     CloseBtn.MouseButton1Click:Connect(closeUI)
     DestroyBtn.MouseButton1Click:Connect(destroyUI)
 
-    -- Open button click vs drag: threshold on release distance.
+    -- Open button click vs drag threshold.
     local openDownPos = nil
     OpenBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
