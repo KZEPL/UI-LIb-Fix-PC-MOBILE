@@ -1,4 +1,7 @@
-
+-- language: Luau, file: library.lua, target: Roblox CoreGui
+-- fix: Screen.ZIndexBehavior was Sibling, which flattens and causes
+--      fills to overlap parent text on some executors. switched to Global.
+--      Every text label now at ZIndex 10, panel at 1, container at 2.
 
 local library = {}
 library.Name = "Vex X Kyzen ui"
@@ -37,22 +40,7 @@ local function slice(img, color, scale)
     img.SliceCenter = Rect.new(100,100,100,100)
     img.SliceScale = scale or 0.03
     img.BackgroundTransparency = 1
-end
-
--- rounded fill via UICorner on a Frame child. no slice-image text collision.
-local function roundFill(parent, color, radius)
-    local fill = Instance.new("Frame")
-    fill.Name = "Fill"
-    fill.Parent = parent
-    fill.BackgroundColor3 = color
-    fill.BorderSizePixel = 0
-    fill.Size = UDim2.new(1, 0, 1, 0)
-    fill.Position = UDim2.new(0, 0, 0, 0)
-    fill.ZIndex = parent.ZIndex - 1
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 6)
-    corner.Parent = fill
-    return fill
+    img.ZIndex = 1
 end
 
 local function backing(btn, color, scale, z)
@@ -62,7 +50,7 @@ local function backing(btn, color, scale, z)
     back.AnchorPoint = Vector2.new(0.5, 0.5)
     back.Position = UDim2.new(0.5, 0, 0.5, 0)
     back.Size = UDim2.new(1, 0, 1, 0)
-    back.ZIndex = z or (btn.ZIndex - 1)
+    back.ZIndex = z or 1
     slice(back, color, scale)
     return back
 end
@@ -111,7 +99,7 @@ function library:CreateWindow(name, theme)
     Screen.Parent = game:WaitForChild("CoreGui")
     Screen.ResetOnSpawn = false
     Screen.IgnoreGuiInset = true
-    Screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    Screen.ZIndexBehavior = Enum.ZIndexBehavior.Global  -- explicit global ordering
 
     local Top = Instance.new("ImageLabel")
     Top.Name = "Top"
@@ -120,6 +108,7 @@ function library:CreateWindow(name, theme)
     Top.Position = UDim2.new(0.5, 0, 0.24, 0)
     Top.Size = UDim2.new(0, 560, 0, 28)
     slice(Top, theme1, 0.03)
+    Top.ZIndex = 1
     Top.Active = true
 
     local Title = Instance.new("TextLabel")
@@ -132,7 +121,7 @@ function library:CreateWindow(name, theme)
     Title.TextColor3 = Color3.fromRGB(255,255,255)
     Title.TextSize = 14
     Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.ZIndex = 3
+    Title.ZIndex = 10
     Title.Active = true
 
     local Controls = Instance.new("Frame")
@@ -142,7 +131,7 @@ function library:CreateWindow(name, theme)
     Controls.AnchorPoint = Vector2.new(1, 0.5)
     Controls.Position = UDim2.new(1, -8, 0.5, 0)
     Controls.Size = UDim2.new(0, 130, 0, 22)
-    Controls.ZIndex = 4
+    Controls.ZIndex = 10
 
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Name = "Close"
@@ -155,7 +144,7 @@ function library:CreateWindow(name, theme)
     CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
     CloseBtn.TextSize = 14
     CloseBtn.AutoButtonColor = false
-    CloseBtn.ZIndex = 5
+    CloseBtn.ZIndex = 11
 
     local DestroyBtn = Instance.new("TextButton")
     DestroyBtn.Name = "Destroy"
@@ -168,7 +157,7 @@ function library:CreateWindow(name, theme)
     DestroyBtn.TextColor3 = Color3.fromRGB(255,100,100)
     DestroyBtn.TextSize = 14
     DestroyBtn.AutoButtonColor = false
-    DestroyBtn.ZIndex = 5
+    DestroyBtn.ZIndex = 11
 
     makeDrag(Top, Top)
     makeDrag(Title, Top)
@@ -181,6 +170,7 @@ function library:CreateWindow(name, theme)
     Main.Position = UDim2.new(0.5, 0, 1, 4)
     Main.Size = UDim2.new(0, 560, 0, 300)
     slice(Main, theme2, 0.03)
+    Main.ZIndex = 2
     Main.Active = false
 
     local Tabs = Instance.new("ImageLabel")
@@ -189,6 +179,7 @@ function library:CreateWindow(name, theme)
     Tabs.Position = UDim2.new(0, 10, 0, 10)
     Tabs.Size = UDim2.new(0, 120, 0, 280)
     slice(Tabs, theme1, 0.02)
+    Tabs.ZIndex = 3
 
     local TabsLayout = Instance.new("UIGridLayout")
     TabsLayout.Parent = Tabs
@@ -202,6 +193,7 @@ function library:CreateWindow(name, theme)
     Items.Position = UDim2.new(0, 138, 0, 10)
     Items.Size = UDim2.new(1, -148, 1, -20)
     slice(Items, theme1, 0.02)
+    Items.ZIndex = 3
 
     local OpenBtn = Instance.new("TextButton")
     OpenBtn.Name = "OpenBtn"
@@ -216,8 +208,8 @@ function library:CreateWindow(name, theme)
     OpenBtn.AutoButtonColor = false
     OpenBtn.Visible = false
     OpenBtn.Active = true
-    OpenBtn.ZIndex = 5
-    backing(OpenBtn, theme1, 0.03, 4)
+    OpenBtn.ZIndex = 20
+    backing(OpenBtn, theme1, 0.03, 1)
 
     makeDrag(OpenBtn, OpenBtn)
 
@@ -285,6 +277,7 @@ function library:CreateWindow(name, theme)
         TabBtn.TextColor3 = Color3.fromRGB(255,255,255)
         TabBtn.TextSize = 14
         TabBtn.AutoButtonColor = false
+        TabBtn.ZIndex = 4
 
         local Frame = Instance.new("ScrollingFrame")
         Frame.Parent = Items
@@ -298,6 +291,7 @@ function library:CreateWindow(name, theme)
         Frame.ScrollBarThickness = 6
         Frame.Visible = false
         Frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        Frame.ZIndex = 4
 
         local Corner = Instance.new("UICorner")
         Corner.Parent = Frame
@@ -312,6 +306,7 @@ function library:CreateWindow(name, theme)
 
         local function padRow(row)
             row.Size = UDim2.new(1, -6, 0, 32)
+            row.ZIndex = 5
             local pad = Instance.new("UIPadding")
             pad.Parent = row
             pad.PaddingLeft = UDim.new(0, 6)
@@ -356,20 +351,27 @@ function library:CreateWindow(name, theme)
             Label.TextColor3 = Color3.fromRGB(255,255,255)
             Label.TextSize = 14
             Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.TextTransparency = 0
+            Label.ZIndex = 10
 
             local ArrowBtn = Instance.new("TextButton")
             ArrowBtn.Parent = Row
             ArrowBtn.AnchorPoint = Vector2.new(1, 0.5)
             ArrowBtn.Position = UDim2.new(1, 0, 0.5, 0)
             ArrowBtn.Size = UDim2.new(0, 26, 0, 22)
-            ArrowBtn.BackgroundTransparency = 1
+            ArrowBtn.BackgroundColor3 = theme2
+            ArrowBtn.BorderSizePixel = 0
             ArrowBtn.Font = Enum.Font.SourceSansBold
             ArrowBtn.Text = "+"
             ArrowBtn.TextColor3 = Color3.fromRGB(255,255,255)
             ArrowBtn.TextSize = 14
+            ArrowBtn.TextTransparency = 0
             ArrowBtn.AutoButtonColor = false
-            ArrowBtn.ZIndex = 3
-            roundFill(ArrowBtn, theme2, 6)
+            ArrowBtn.ZIndex = 10
+
+            local arrowCorner = Instance.new("UICorner")
+            arrowCorner.CornerRadius = UDim.new(0, 6)
+            arrowCorner.Parent = ArrowBtn
 
             local DropContainer = Instance.new("ImageLabel")
             DropContainer.Parent = Row
@@ -377,7 +379,7 @@ function library:CreateWindow(name, theme)
             DropContainer.Position = UDim2.new(1, 0, 1, 4)
             DropContainer.Size = UDim2.new(0, 197, 0, 0)
             DropContainer.Visible = false
-            DropContainer.ZIndex = 10
+            DropContainer.ZIndex = 30
             slice(DropContainer, theme2, 0.02)
             DropContainer.AutomaticSize = Enum.AutomaticSize.Y
 
@@ -402,8 +404,9 @@ function library:CreateWindow(name, theme)
                 Opt.Text = v
                 Opt.TextColor3 = Color3.fromRGB(255,255,255)
                 Opt.TextSize = 14
+                Opt.TextTransparency = 0
                 Opt.AutoButtonColor = false
-                Opt.ZIndex = 11
+                Opt.ZIndex = 31
                 Opt.MouseButton1Click:Connect(function()
                     Label.Text = v
                     callback(v)
@@ -438,6 +441,8 @@ function library:CreateWindow(name, theme)
             Label.TextColor3 = Color3.fromRGB(255,255,255)
             Label.TextSize = 14
             Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.TextTransparency = 0
+            Label.ZIndex = 10
 
             local BarBack = Instance.new("ImageLabel")
             BarBack.Parent = Row
@@ -445,11 +450,13 @@ function library:CreateWindow(name, theme)
             BarBack.Position = UDim2.new(1, -30, 0.5, 0)
             BarBack.Size = UDim2.new(0, 120, 0, 8)
             slice(BarBack, theme2, 0.02)
+            BarBack.ZIndex = 10
 
             local BarFill = Instance.new("ImageLabel")
             BarFill.Parent = BarBack
             BarFill.Size = UDim2.new(0, 0, 1, 0)
             slice(BarFill, theme3, 0.02)
+            BarFill.ZIndex = 11
 
             local ValLabel = Instance.new("TextLabel")
             ValLabel.Parent = Row
@@ -461,6 +468,8 @@ function library:CreateWindow(name, theme)
             ValLabel.Text = tostring(minvalue)
             ValLabel.TextColor3 = theme3
             ValLabel.TextSize = 13
+            ValLabel.TextTransparency = 0
+            ValLabel.ZIndex = 10
 
             local dragging = false
             local function update()
@@ -511,6 +520,8 @@ function library:CreateWindow(name, theme)
             Label.TextColor3 = Color3.fromRGB(255,255,255)
             Label.TextSize = 14
             Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.TextTransparency = 0
+            Label.ZIndex = 10
 
             local Track = Instance.new("ImageLabel")
             Track.Parent = Row
@@ -518,12 +529,14 @@ function library:CreateWindow(name, theme)
             Track.Position = UDim2.new(1, 0, 0.5, 0)
             Track.Size = UDim2.new(0, 32, 0, 16)
             slice(Track, theme2, 0.25)
+            Track.ZIndex = 10
 
             local Knob = Instance.new("ImageLabel")
             Knob.Parent = Track
             Knob.Position = UDim2.new(0, 2, 0.5, -5)
             Knob.Size = UDim2.new(0, 10, 0, 10)
             slice(Knob, toolight and theme3 or Color3.fromRGB(255,255,255), 0.25)
+            Knob.ZIndex = 11
 
             local ClickArea = Instance.new("TextButton")
             ClickArea.Parent = Row
@@ -532,6 +545,7 @@ function library:CreateWindow(name, theme)
             ClickArea.Size = UDim2.new(0, 32, 0, 20)
             ClickArea.BackgroundTransparency = 1
             ClickArea.Text = ""
+            ClickArea.ZIndex = 12
 
             local enabled = false
             local function render()
@@ -580,6 +594,8 @@ function library:CreateWindow(name, theme)
             Label.TextColor3 = Color3.fromRGB(255,255,255)
             Label.TextSize = 14
             Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.TextTransparency = 0
+            Label.ZIndex = 10
 
             local Box = Instance.new("ImageLabel")
             Box.Parent = Row
@@ -587,6 +603,7 @@ function library:CreateWindow(name, theme)
             Box.Position = UDim2.new(1, 0, 0.5, 0)
             Box.Size = UDim2.new(0, 18, 0, 18)
             slice(Box, theme2, 0.02)
+            Box.ZIndex = 10
 
             local Fill = Instance.new("ImageLabel")
             Fill.Parent = Box
@@ -594,12 +611,14 @@ function library:CreateWindow(name, theme)
             Fill.Position = UDim2.new(0.5, 0, 0.5, 0)
             Fill.Size = UDim2.new(0, 10, 0, 10)
             slice(Fill, theme2, 0.02)
+            Fill.ZIndex = 11
 
             local Click = Instance.new("TextButton")
             Click.Parent = Box
             Click.Size = UDim2.new(1, 0, 1, 0)
             Click.BackgroundTransparency = 1
             Click.Text = ""
+            Click.ZIndex = 12
 
             local enabled = false
             Click.MouseButton1Click:Connect(function()
@@ -610,7 +629,6 @@ function library:CreateWindow(name, theme)
             end)
         end
 
-        -- BUTTON — Frame fill via UICorner, text always visible
         function InsideTab:CreateButton(text, callback)
             text = text or "New Button"
             callback = callback or function() end
@@ -625,8 +643,8 @@ function library:CreateWindow(name, theme)
             Btn.Parent = Row
             Btn.AnchorPoint = Vector2.new(0.5, 0.5)
             Btn.Position = UDim2.new(0.5, 0, 0.5, 0)
-            Btn.Size = UDim2.new(1, -12, 1, -8)   -- breathing room so corners don't touch text
-            Btn.BackgroundColor3 = theme2          -- solid fill directly on the TextButton
+            Btn.Size = UDim2.new(1, -12, 1, -8)
+            Btn.BackgroundColor3 = theme2
             Btn.BackgroundTransparency = 0
             Btn.BorderSizePixel = 0
             Btn.Font = Enum.Font.SourceSansSemibold
@@ -638,7 +656,7 @@ function library:CreateWindow(name, theme)
             Btn.TextTransparency = 0
             Btn.TextStrokeTransparency = 1
             Btn.AutoButtonColor = false
-            Btn.ZIndex = 2
+            Btn.ZIndex = 10
 
             local corner = Instance.new("UICorner")
             corner.CornerRadius = UDim.new(0, 6)
