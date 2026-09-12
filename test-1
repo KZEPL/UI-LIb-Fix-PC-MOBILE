@@ -1,3 +1,5 @@
+
+
 local library = {}
 library.Name = "Vex X Kyzen ui"
 
@@ -35,6 +37,22 @@ local function slice(img, color, scale)
     img.SliceCenter = Rect.new(100,100,100,100)
     img.SliceScale = scale or 0.03
     img.BackgroundTransparency = 1
+end
+
+-- rounded fill via UICorner on a Frame child. no slice-image text collision.
+local function roundFill(parent, color, radius)
+    local fill = Instance.new("Frame")
+    fill.Name = "Fill"
+    fill.Parent = parent
+    fill.BackgroundColor3 = color
+    fill.BorderSizePixel = 0
+    fill.Size = UDim2.new(1, 0, 1, 0)
+    fill.Position = UDim2.new(0, 0, 0, 0)
+    fill.ZIndex = parent.ZIndex - 1
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 6)
+    corner.Parent = fill
+    return fill
 end
 
 local function backing(btn, color, scale, z)
@@ -288,12 +306,12 @@ function library:CreateWindow(name, theme)
         Grid.Parent = Frame
         Grid.FillDirection = Enum.FillDirection.Vertical
         Grid.SortOrder = Enum.SortOrder.LayoutOrder
-        Grid.CellSize = UDim2.new(1, -6, 0, 28)   -- taller so button fill isn't squeezed
+        Grid.CellSize = UDim2.new(1, -6, 0, 32)
         Grid.CellPadding = UDim2.new(0, 0, 0, 6)
         Grid.StartCorner = Enum.StartCorner.TopLeft
 
         local function padRow(row)
-            row.Size = UDim2.new(1, -6, 0, 28)
+            row.Size = UDim2.new(1, -6, 0, 32)
             local pad = Instance.new("UIPadding")
             pad.Parent = row
             pad.PaddingLeft = UDim.new(0, 6)
@@ -351,7 +369,7 @@ function library:CreateWindow(name, theme)
             ArrowBtn.TextSize = 14
             ArrowBtn.AutoButtonColor = false
             ArrowBtn.ZIndex = 3
-            backing(ArrowBtn, theme2, 0.02, 2)
+            roundFill(ArrowBtn, theme2, 6)
 
             local DropContainer = Instance.new("ImageLabel")
             DropContainer.Parent = Row
@@ -592,7 +610,7 @@ function library:CreateWindow(name, theme)
             end)
         end
 
-        -- BUTTON — visible text, full-size backing, no clipping
+        -- BUTTON — Frame fill via UICorner, text always visible
         function InsideTab:CreateButton(text, callback)
             text = text or "New Button"
             callback = callback or function() end
@@ -605,18 +623,26 @@ function library:CreateWindow(name, theme)
 
             local Btn = Instance.new("TextButton")
             Btn.Parent = Row
-            Btn.Size = UDim2.new(1, -12, 1, -6)     -- inset so backing corners stay visible
-            Btn.Position = UDim2.new(0, 6, 0, 3)
-            Btn.BackgroundTransparency = 1
+            Btn.AnchorPoint = Vector2.new(0.5, 0.5)
+            Btn.Position = UDim2.new(0.5, 0, 0.5, 0)
+            Btn.Size = UDim2.new(1, -12, 1, -8)   -- breathing room so corners don't touch text
+            Btn.BackgroundColor3 = theme2          -- solid fill directly on the TextButton
+            Btn.BackgroundTransparency = 0
+            Btn.BorderSizePixel = 0
             Btn.Font = Enum.Font.SourceSansSemibold
             Btn.Text = text
-            Btn.TextColor3 = Color3.fromRGB(255,255,255)  -- white, readable on every theme2
+            Btn.TextColor3 = Color3.fromRGB(255,255,255)
             Btn.TextSize = 14
             Btn.TextXAlignment = Enum.TextXAlignment.Center
             Btn.TextYAlignment = Enum.TextYAlignment.Center
+            Btn.TextTransparency = 0
+            Btn.TextStrokeTransparency = 1
             Btn.AutoButtonColor = false
-            Btn.ZIndex = 2                              -- text on top of backing
-            backing(Btn, theme2, 0.03, 1)               -- backing at ZIndex 1, under the text
+            Btn.ZIndex = 2
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 6)
+            corner.Parent = Btn
 
             Btn.MouseButton1Click:Connect(function()
                 pcall(callback)
